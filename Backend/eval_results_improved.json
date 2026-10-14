@@ -1,0 +1,460 @@
+{
+  "eval_mode": "improved",
+  "ablation_flag": null,
+  "timestamp": "2026-10-14T10:38:08.297148",
+  "total_questions": 20,
+  "overall_recall_pct": 60.0,
+  "overall_correctness_pct": 95.0,
+  "avg_latency_s": 6.77,
+  "total_runtime_s": 211.52,
+  "category_summary": {
+    "Comparison": {
+      "total": 5,
+      "recall_pct": 80.0,
+      "correctness_pct": 100.0,
+      "avg_latency_s": 5.73
+    },
+    "Multi-Hop": {
+      "total": 5,
+      "recall_pct": 60.0,
+      "correctness_pct": 100.0,
+      "avg_latency_s": 11.1
+    },
+    "Multi-Section": {
+      "total": 5,
+      "recall_pct": 40.0,
+      "correctness_pct": 100.0,
+      "avg_latency_s": 5.37
+    },
+    "Multi-Document": {
+      "total": 5,
+      "recall_pct": 60.0,
+      "correctness_pct": 80.0,
+      "avg_latency_s": 4.87
+    }
+  },
+  "results": [
+    {
+      "id": "COMP-01",
+      "category": "Comparison",
+      "question": "Compare Karpenter NodePools with Managed Node Groups in terms of capacity types, node provisioning, and expiration policies.",
+      "target_pages": [
+        4,
+        5
+      ],
+      "retrieved_pages": [
+        1,
+        4,
+        9,
+        10
+      ],
+      "retrieval_hit": true,
+      "recall_score": 0.5,
+      "answer_correct": true,
+      "fact_score": 1.0,
+      "latency_s": 5.53,
+      "answer": "| Criteria | Karpenter NodePools | Managed Node Groups |\n| :--- | :--- | :--- |\n| **Capacity Types** | - The default `general` NodePool uses `on-demand` capacity [doc_v2_handb_p4_c009].<br>- Batch workloads use a separate `batch-spot` NodePool that is restricted to `Spot` capacity [doc_v2_handb_p4_c009]. | Information regarding specific capacity types for Managed Node Groups was not found in the uploaded documents. |\n| **Node Provisioning** | Application capacity is provisioned by Karpenter [doc_v2_handb_p4_c009]. | System workloads such as CoreDNS, the metrics server, and the ingress controller run on a managed node group named `ng-system`, which uses `m6i.large` instances with a minimum size of 3 and a maximum size of 6 [doc_v2_handb_p4_c009]. |\n| **Expiration Policies** | Nodes expire after 720 hours so that instances are replaced with current AMIs at least every 30 days [doc_v2_handb_p4_c009]. | Managed node groups are upgraded by Amazon EKS using a rolling update with a maximum unavailable setting of 1 node [doc_v2_handb_p4_c009]. |",
+      "details": "Fact met (54%): 'Managed node groups use EC2 Auto Scaling...'; Fact met (83%): 'Karpenter uses NodePool CRDs with on-dem...'; Fact met (70%): 'Karpenter nodes expire after 720 hours (...'"
+    },
+    {
+      "id": "COMP-02",
+      "category": "Comparison",
+      "question": "Compare Amazon EBS (gp3) with Amazon EFS storage in terms of CSI drivers, workload suitability, and reclaim policy.",
+      "target_pages": [
+        9
+      ],
+      "retrieved_pages": [
+        6,
+        7,
+        9
+      ],
+      "retrieval_hit": true,
+      "recall_score": 1.0,
+      "answer_correct": true,
+      "fact_score": 1.0,
+      "latency_s": 6.35,
+      "answer": "Based on the provided documents, here is a comparison between Amazon EBS (gp3) and Amazon EFS storage:\n\n| Criteria | Amazon EBS (gp3) | Amazon EFS |\n| :--- | :--- | :--- |\n| **CSI Driver** | Provided by the EBS CSI driver [doc_v2_handb_p9_c028] | Provided by the EFS CSI driver [doc_v2_handb_p9_c028] |\n| **Workload Suitability** | The default StorageClass for workloads [doc_v2_handb_p9_c028]. | Not suitable for latency-sensitive databases; used mainly for shared content and build caches [doc_v2_handb_p9_c028]. |\n| **Reclaim Policy** | Delete for the default class (workloads that must keep data after the claim is removed need the gp3-retain class instead) [doc_v2_handb_p9_c028]. | *Information regarding this topic was not found in the uploaded documents.* [doc_v2_handb_p9_c028] |",
+      "details": "Fact met (100%): 'EBS uses gp3 storage class and EBS CSI d...'; Fact met (77%): 'EFS uses EFS CSI driver for shared read-...'; Fact met (100%): 'EFS is not suitable for latency-sensitiv...'"
+    },
+    {
+      "id": "COMP-03",
+      "category": "Comparison",
+      "question": "Compare IAM Roles for Service Accounts (IRSA) with EKS Pod Identity in terms of configuration requirements and migration review.",
+      "target_pages": [
+        5,
+        6
+      ],
+      "retrieved_pages": [
+        1,
+        5,
+        10,
+        11
+      ],
+      "retrieval_hit": false,
+      "recall_score": 0.5,
+      "answer_correct": true,
+      "fact_score": 1.0,
+      "latency_s": 6.21,
+      "answer": "Based on the provided documents, here is a side-by-side comparison of IAM Roles for Service Accounts (IRSA) and EKS Pod Identity:\n\n| Comparison Criteria | IAM Roles for Service Accounts (IRSA) | EKS Pod Identity |\n| :--- | :--- | :--- |\n| **Configuration Requirements** | \u2022 Each cluster has an OIDC identity provider, and every IAM role used by a pod must trust only that provider and only one specific service account [doc_v2_handb_p5_c013].<br>\u2022 Roles must follow the naming pattern `eks-irsa-<namespace>-<serviceaccount>` [doc_v2_handb_p5_c013].<br>\u2022 Service accounts must include the annotation `eks.amazonaws.com/role-arn` pointing to the role ARN [doc_v2_handb_p5_c013]. | \u2022 New workloads should use EKS Pod Identity where the add-on is available [doc_v2_handb_p5_c013].<br>\u2022 Existing IRSA roles must be migrated before 31 December 2026, after which OIDC trust relationships will be removed from the production account [doc_v2_handb_p5_c013]. |\n| **Migration Review** | \u2022 Not specified for initial creation, but existing IRSA roles migrating to Pod Identity must undergo a specific migration process [doc_v2_handb_p5_c013]. | \u2022 Every migrated workload must pass a permission review in which the policy is reduced to the actions actually used over the previous 30 days [doc_v2_handb_p5_c013]. |",
+      "details": "Fact met (90%): 'IRSA requires an OIDC provider, trust po...'; Fact met (50%): 'EKS Pod Identity simplifies setup withou...'; Fact met (83%): 'Migrated workloads must pass a permissio...'"
+    },
+    {
+      "id": "COMP-04",
+      "category": "Comparison",
+      "question": "Compare the Pod Disruption Budget (PDB) maxUnavailable settings between stateless multi-replica services and stateful database workloads.",
+      "target_pages": [
+        9
+      ],
+      "retrieved_pages": [
+        9
+      ],
+      "retrieval_hit": true,
+      "recall_score": 1.0,
+      "answer_correct": true,
+      "fact_score": 1.0,
+      "latency_s": 5.06,
+      "answer": "Based on the provided documents, here is the comparison of the Pod Disruption Budget (PDB) `maxUnavailable` settings between stateless multi-replica services and stateful database workloads:\n\n| Workload Type | `maxUnavailable` Setting | Description / Purpose |\n| :--- | :--- | :--- |\n| **Stateless multi-replica services** (Every Deployment with two or more replicas) | `1` | Allows node drains during upgrades to proceed one pod at a time without taking a service down [doc_v2_handb_p9_c027]. |\n| **Stateful database workloads** (Stateful workloads such as databases running in the cluster) | `0` | Requires databases to be drained manually under the supervision of the owning team [doc_v2_handb_p9_c027]. |",
+      "details": "Fact met (75%): 'Deployments with 2+ replicas require max...'; Fact met (100%): 'Stateful database workloads require maxU...'; Fact met (85%): 'Stateful workloads are drained manually ...'"
+    },
+    {
+      "id": "COMP-05",
+      "category": "Comparison",
+      "question": "Compare the customer impact definition and response target between SEV1, SEV2, and SEV3 incidents.",
+      "target_pages": [
+        11
+      ],
+      "retrieved_pages": [
+        11,
+        12
+      ],
+      "retrieval_hit": true,
+      "recall_score": 1.0,
+      "answer_correct": true,
+      "fact_score": 1.0,
+      "latency_s": 5.51,
+      "answer": "Based on the provided documents, here is the comparison of the customer impact definition and response target across SEV1, SEV2, and SEV3 incidents:\n\n| Severity | Definition | Response target |\n| :--- | :--- | :--- |\n| **SEV1** | Customer-facing outage or data loss [doc_v2_handb_p11_c038] | 15 minutes [doc_v2_handb_p11_c038] |\n| **SEV2** | Significant degradation, workaround exists [doc_v2_handb_p11_c038] | 30 minutes [doc_v2_handb_p11_c038] |\n| **SEV3** | Minor issue, no customer impact [doc_v2_handb_p11_c038] | Next business day [doc_v2_handb_p11_c038] |",
+      "details": "Fact met (87%): 'SEV1: Customer-facing outage or data los...'; Fact met (85%): 'SEV2: Significant degradation with worka...'; Fact met (88%): 'SEV3: Minor issue with no customer impac...'"
+    },
+    {
+      "id": "MHOP-01",
+      "category": "Multi-Hop",
+      "question": "What target CPU utilization triggers scaling for payments-api, what alert is triggered if node CPU exceeds its threshold, and what is the severity level of that alert?",
+      "target_pages": [
+        8
+      ],
+      "retrieved_pages": [
+        4,
+        8,
+        9
+      ],
+      "retrieval_hit": true,
+      "recall_score": 1.0,
+      "answer_correct": true,
+      "fact_score": 1.0,
+      "latency_s": 35.31,
+      "answer": "Based on the provided documents, here are the answers to your questions:\n\n* **Target CPU utilization for `payments-api`:** The Horizontal Pod Autoscaler for `payments-api` specifies a target average CPU utilization of 65% [doc_v2_handb_p8_c025].\n* **Alert triggered if node CPU exceeds its threshold:** The alert triggered when node CPU exceeds its threshold is **NodeHighCPU** (triggered when Node CPU is above 85% for 10 minutes) [doc_v2_handb_p8_c025].\n* **Severity level:** The severity level for the `NodeHighCPU` alert is **SEV3** [doc_v2_handb_p8_c025].",
+      "details": "Fact met (60%): 'payments-api HPA targets 65% CPU utiliza...'; Fact met (85%): 'NodeHighCPU alert triggers when CPU is a...'; Fact met (83%): 'NodeHighCPU alert has a severity level o...'"
+    },
+    {
+      "id": "MHOP-02",
+      "category": "Multi-Hop",
+      "question": "If a pod enters ImagePullBackOff, what is the likely cause, what is the first action to take, and which team owns the namespace and Helm release where this pod runs?",
+      "target_pages": [
+        2,
+        10
+      ],
+      "retrieved_pages": [
+        1,
+        2,
+        10
+      ],
+      "retrieval_hit": true,
+      "recall_score": 1.0,
+      "answer_correct": true,
+      "fact_score": 0.67,
+      "latency_s": 5.0,
+      "answer": "Based on the provided documents, here are the details regarding the `ImagePullBackOff` error:\n\n* **Likely cause:** Wrong tag or missing ECR permission [doc_v2_handb_p10_c031].\n* **First action:** Check image name and node role [doc_v2_handb_p10_c031].\n* **Owning team:** Information regarding this topic was not found in the uploaded documents.",
+      "details": "Fact met (100%): 'Likely cause is wrong tag or missing ECR...'; Fact met (100%): 'First action is check image name and nod...'; Fact missed: 'Application teams own their namespaces a...'"
+    },
+    {
+      "id": "MHOP-03",
+      "category": "Multi-Hop",
+      "question": "Which cluster is dedicated to sandbox experiments, what Kubernetes minor version runs on production, and how long may an unsupported Kubernetes version remain in production?",
+      "target_pages": [
+        2,
+        3
+      ],
+      "retrieved_pages": [
+        1,
+        2,
+        3,
+        8,
+        9
+      ],
+      "retrieval_hit": true,
+      "recall_score": 1.0,
+      "answer_correct": true,
+      "fact_score": 1.0,
+      "latency_s": 6.13,
+      "answer": "Based on the provided documents, here are the answers to your questions:\n\n* **Sandbox experiments cluster:** The sandbox cluster used for experiments is named `dev-euw1-sandbox` [doc_v2_handb_p2_c003].\n* **Production Kubernetes minor version:** The production cluster (`prod-use1-core`) runs Kubernetes 1.31 [doc_v2_handb_p2_c003].\n* **Duration for an unsupported Kubernetes version in production:** A minor version must not remain in production for more than 12 months after it reaches the end of standard support [doc_v2_handb_p2_c003].",
+      "details": "Fact met (100%): 'Sandbox cluster for experiments is dev-e...'; Fact met (100%): 'prod-use1-core runs Kubernetes 1.31...'; Fact met (100%): 'Minor version must not remain in product...'"
+    },
+    {
+      "id": "MHOP-04",
+      "category": "Multi-Hop",
+      "question": "What is the Karpenter NodePool consolidation policy, after how many hours do nodes expire, and what maxUnavailable disruption budget setting must database pods have during node drains?",
+      "target_pages": [
+        5,
+        9
+      ],
+      "retrieved_pages": [
+        4,
+        9
+      ],
+      "retrieval_hit": false,
+      "recall_score": 0.5,
+      "answer_correct": true,
+      "fact_score": 1.0,
+      "latency_s": 4.36,
+      "answer": "Based on the provided documents, here are the answers to your questions:\n\n* **Karpenter NodePool consolidation policy:** The consolidation policy for the default `general` NodePool is `WhenEmptyOrUnderutilized` [doc_v2_handb_p4_c009].\n* **Node expiration time:** Nodes expire after 720 hours [doc_v2_handb_p4_c009].\n* **Database pods maxUnavailable disruption budget setting:** Stateful workloads such as databases running in the cluster use a budget of `maxUnavailable` set to `0` [doc_v2_handb_p9_c027].",
+      "details": "Fact met (100%): 'Consolidation policy is WhenEmptyOrUnder...'; Fact met (83%): 'Nodes expire after 720 hours (720h)...'; Fact met (80%): 'Stateful database workloads require maxU...'"
+    },
+    {
+      "id": "MHOP-05",
+      "category": "Multi-Hop",
+      "question": "How many CoreDNS replicas are required in production, what DNS caching daemon is used, and what specific domain suffix is reserved for platform services?",
+      "target_pages": [
+        4
+      ],
+      "retrieved_pages": [
+        3,
+        7,
+        8
+      ],
+      "retrieval_hit": false,
+      "recall_score": 0.0,
+      "answer_correct": true,
+      "fact_score": 1.0,
+      "latency_s": 4.72,
+      "answer": "Based on the provided document, here are the details regarding CoreDNS, DNS caching, and reserved platform domains in production:\n\n* **CoreDNS Replicas:** CoreDNS runs with a minimum of 3 replicas in production [doc_v2_handb_p3_c004].\n* **DNS Caching Daemon:** It uses the NodeLocal DNSCache to reduce latency [doc_v2_handb_p3_c004].\n* **Reserved Domain Suffix:** The `kube-system.svc.cluster.local` domain is reserved for platform services [doc_v2_handb_p3_c004].",
+      "details": "Fact met (100%): 'Minimum of 3 replicas of CoreDNS in prod...'; Fact met (100%): 'Uses NodeLocal DNSCache...'; Fact met (100%): 'kube-system.svc.cluster.local is reserve...'"
+    },
+    {
+      "id": "MSEC-01",
+      "category": "Multi-Section",
+      "question": "Explain the full cluster upgrade process including the Kubernetes version policy, the exact order of component upgrades, and the pre-upgrade ticket requirements.",
+      "target_pages": [
+        2,
+        3,
+        6,
+        7
+      ],
+      "retrieved_pages": [
+        2,
+        3,
+        7
+      ],
+      "retrieval_hit": true,
+      "recall_score": 0.75,
+      "answer_correct": true,
+      "fact_score": 1.0,
+      "latency_s": 6.12,
+      "answer": "Information regarding this topic was found in the uploaded documents and is detailed below based on the specified guidelines:\n\n### **Kubernetes Version Policy**\n* Acme Corp follows an $n-1$ version policy: production runs one minor version behind the newest version supported by Amazon EKS [doc_v2_handb_p2_c003].\n* At the time of writing, `prod-use1-core` runs Kubernetes 1.31 and `staging-use1-core` runs 1.32 [doc_v2_handb_p2_c003].\n* Staging always upgrades first so that add-on and API compatibility problems are found before production is touched [doc_v2_handb_p2_c003].\n* A minor version must not remain in production for more than 12 months after it reaches the end of standard support [doc_v2_handb_p2_c003].\n\n### **Exact Order of Component Upgrades**\n* Upgrades always follow the same exact order; skipping a step or reordering them is not permitted because add-on versions are only validated against the matching control plane version [doc_v2_handb_p7_c020]:\n  1. **Control plane** (e.g., using command: `eksctl upgrade cluster --name staging-use1-core --version 1.32 --approve`) [doc_v2_handb_p7_c019, doc_v2_handb_p7_c020]\n  2. **Managed add-ons** (VPC CNI, CoreDNS, kube-proxy, and the EBS CSI driver; e.g., using command: `eksctl update addon --cluster staging-use1-core --name vpc-cni --force`) [doc_v2_handb_p7_c019, doc_v2_handb_p7_c020]\n  3. **Nodes** [doc_v2_handb_p7_c020]\n* *Note on Rollbacks:* Amazon EKS does not support rolling back a control plane to a previous minor version. If a problem is found after the control plane upgrade, the only options are to fix forward or to restore workloads into a new cluster built at the older version [doc_v2_handb_p7_c020].\n\n### **Pre-Upgrade Ticket Requirements**\nBefore any upgrade, the on-call engineer must confirm the following [doc_v2_handb_p7_c019]:\n* All Pod Disruption Budgets allow at least one pod to be evicted [doc_v2_handb_p7_c019].\n* No node is in the `NotReady` state [doc_v2_handb_p7_c019].\n* The latest etcd-independent backups of persistent volumes completed successfully [doc_v2_handb_p7_c019].\n\nAdditionally, the upgrade ticket **must** contain [doc_v2_handb_p7_c019]:\n* The output of the deprecated-API check [doc_v2_handb_p7_c019].\n* The list of add-on versions before and after [doc_v2_handb_p7_c019].\n* A named rollback owner [doc_v2_handb_p7_c019].\n* *Tickets missing any of these items are returned to the requester [doc_v2_handb_p7_c019].*",
+      "details": "Fact met (100%): 'Acme follows an n-1 version policy, stag...'; Fact met (66%): 'Upgrade order: control plane first, then...'; Fact met (91%): 'Pre-upgrade ticket requires deprecated-A...'"
+    },
+    {
+      "id": "MSEC-02",
+      "category": "Multi-Section",
+      "question": "What is the backup, snapshot schedule, and quarterly restore verification drill process for persistent storage and disaster recovery?",
+      "target_pages": [
+        7,
+        9,
+        10
+      ],
+      "retrieved_pages": [
+        9
+      ],
+      "retrieval_hit": false,
+      "recall_score": 0.3333333333333333,
+      "answer_correct": true,
+      "fact_score": 0.67,
+      "latency_s": 5.09,
+      "answer": "Based on the provided documents, the backup, snapshot schedule, and quarterly restore verification drill process include the following:\n\n* **Backups:** The on-call engineer confirms that the latest etcd-independent backups of persistent volumes completed successfully before any upgrade [doc_v2_handb_p9_c028].\n* **Snapshot Schedule:** Volume snapshots are taken daily at 01:00 UTC and kept for 7 days [doc_v2_handb_p9_c028].\n* **Quarterly Restore Verification Drill:** A restore drill is carried out every quarter by restoring a randomly selected snapshot into the staging cluster and verifying application data [doc_v2_handb_p9_c028].",
+      "details": "Fact met (100%): 'Volume snapshots are taken daily at 01:0...'; Fact met (90%): 'Quarterly restore drill restores random ...'; Fact missed: 'Snapshots encrypted with same KMS key as...'"
+    },
+    {
+      "id": "MSEC-03",
+      "category": "Multi-Section",
+      "question": "Detail the observability standards: which required labels must every /metrics endpoint have, how long are metrics and logs retained, and what is the alert threshold for API server errors?",
+      "target_pages": [
+        7,
+        8
+      ],
+      "retrieved_pages": [
+        1,
+        2,
+        8
+      ],
+      "retrieval_hit": false,
+      "recall_score": 0.5,
+      "answer_correct": true,
+      "fact_score": 1.0,
+      "latency_s": 5.47,
+      "answer": "Based on the provided documents, the observability standards are detailed as follows:\n\n*   **Required Labels:** Every service must expose a `/metrics` endpoint and include the labels `app`, `team`, and `env` (series without these labels are dropped by the collector) [doc_v2_handb_p8_c022].\n*   **Retention Periods:** \n    *   Metrics are retained for 15 days at full resolution [doc_v2_handb_p8_c022].\n    *   Application and control plane logs are retained for 30 days [doc_v2_handb_p8_c022].\n    *   Kubernetes audit logs must be retained for a minimum of 365 days (1 year) [doc_v2_secur_p2_c004].\n*   **API Server Errors Alert Threshold:** \n    *   The alert for API server errors (`APIServerErrors`) triggers when the 5xx rate is above 2% for 5 minutes, with a severity of SEV1 [doc_v2_handb_p8_c022].",
+      "details": "Fact met (100%): '/metrics endpoint must expose labels: ap...'; Fact met (100%): 'Metrics retained for 15 days, applicatio...'; Fact met (100%): 'APIServerErrors alert triggers when 5xx ...'"
+    },
+    {
+      "id": "MSEC-04",
+      "category": "Multi-Section",
+      "question": "What cost management rules govern Spot capacity usage, what three tags are mandatory on all AWS resources, and after how many days are unclaimed resources removed?",
+      "target_pages": [
+        11
+      ],
+      "retrieved_pages": [
+        1,
+        2,
+        5,
+        6,
+        7,
+        8
+      ],
+      "retrieval_hit": false,
+      "recall_score": 0.0,
+      "answer_correct": true,
+      "fact_score": 1.0,
+      "latency_s": 5.21,
+      "answer": "Based on the provided documents, here are the cost management rules regarding Spot capacity usage, mandatory tags, and unclaimed resource removal:\n\n* **Spot Capacity Rules:** Spot instances may save up to 70% compared with on-demand prices and are used for batch and non-critical workloads only [doc_v2_handb_p7_c021]. Customer-facing services must never run exclusively on Spot capacity [doc_v2_handb_p7_c021].\n* **Mandatory Tags:** All AWS resources created for the clusters must carry three specific tags: `cost-center`, `owner`, and `env` [doc_v2_handb_p7_c021].\n* **Unclaimed Resource Removal:** Untagged resources are reported weekly and removed after **14 days** if no owner claims them [doc_v2_handb_p7_c021].",
+      "details": "Fact met (100%): 'Spot instances save up to 70%, for batch...'; Fact met (100%): 'Mandatory tags are cost-center, owner, a...'; Fact met (100%): 'Untagged resources reported weekly and r...'"
+    },
+    {
+      "id": "MSEC-05",
+      "category": "Multi-Section",
+      "question": "What are the specific weekly on-call rotation hours and handoff procedures, and within how many business days must a blameless postmortem be published following an outage?",
+      "target_pages": [
+        11,
+        12
+      ],
+      "retrieved_pages": [
+        1,
+        2,
+        6,
+        7,
+        11,
+        12
+      ],
+      "retrieval_hit": true,
+      "recall_score": 1.0,
+      "answer_correct": true,
+      "fact_score": 1.0,
+      "latency_s": 4.93,
+      "answer": "Based on the provided documents, here are the details regarding the on-call rotation, handoff procedures, and postmortem requirements:\n\n* **Weekly on-call rotation hours:** The on-call rotation changes every Monday at 09:00 UTC [doc_v2_handb_p11_c038].\n* **Handoff procedures:** A handover note is required at each rotation change, and the primary and secondary engineers are listed in the paging tool [doc_v2_handb_p11_c038].\n* **Postmortem publication timeline:** A blameless postmortem must be published within 5 business days of every SEV1 or SEV2 incident [doc_v2_handb_p11_c038].",
+      "details": "Fact met (100%): 'On-call rotation changes every Monday at...'; Fact met (100%): 'Primary and secondary engineers listed i...'; Fact met (100%): 'Blameless postmortem must be published w...'"
+    },
+    {
+      "id": "MDOC-01",
+      "category": "Multi-Document",
+      "question": "Compare the retention period for operational application and control plane logs in the EKS Handbook with the retention period for audit logs in the Security Standard.",
+      "target_pages": [
+        7,
+        2
+      ],
+      "retrieved_pages": [
+        2,
+        7,
+        8
+      ],
+      "retrieval_hit": true,
+      "recall_score": 1.0,
+      "answer_correct": true,
+      "fact_score": 1.0,
+      "latency_s": 5.25,
+      "answer": "Information regarding the retention period for control plane logs in the Security Standard was not found in the uploaded documents. However, based on the provided documents, here is the comparison of the retention periods:\n\n| Log Type | Source Document | Retention Period |\n| :--- | :--- | :--- |\n| Operational application logs | EKS Handbook (`eks_handbook.pdf`) [doc_v2_handb_p7_c021] | 30 days [doc_v2_handb_p7_c021] |\n| Control plane logs | EKS Handbook (`eks_handbook.pdf`) [doc_v2_handb_p7_c021] | 30 days [doc_v2_handb_p7_c021] |\n| Kubernetes audit logs | Security Policy (`security_policy.pdf`) [doc_v2_secur_p2_c004] | Minimum of 365 days (1 year) [doc_v2_secur_p2_c004] |",
+      "details": "Fact met (70%): 'EKS Handbook specifies application and c...'; Fact met (72%): 'Security Standard requires audit logs to...'"
+    },
+    {
+      "id": "MDOC-02",
+      "category": "Multi-Document",
+      "question": "Compare the incident response target and notification procedures for an operational SEV1 incident versus a security SEC-1 incident.",
+      "target_pages": [
+        11,
+        2
+      ],
+      "retrieved_pages": [
+        1,
+        2,
+        8
+      ],
+      "retrieval_hit": false,
+      "recall_score": 0.5,
+      "answer_correct": true,
+      "fact_score": 1.0,
+      "latency_s": 4.56,
+      "answer": "Based on the provided documents, here is the comparison between an operational SEV1 incident and a security SEC-1 incident:\n\n| Criteria | Operational SEV1 Incident | Security SEC-1 Incident |\n| :--- | :--- | :--- |\n| **Definition / Source** | Customer-facing outage or data loss [doc_v2_handb_p8_c024] | Security incidents [doc_v2_secur_p2_c005] |\n| **Response Target** | 15 minutes (applies 24 hours a day) [doc_v2_handb_p8_c024] | Immediate response target of 10 minutes [doc_v2_secur_p2_c005] |\n| **Notification Procedures** | Not specified in the context excerpts for SEV1 specifically (though general on-call rotation uses the paging tool) [doc_v2_handb_p8_c024] | Direct paging of the CISO on-call [doc_v2_secur_p2_c005] |",
+      "details": "Fact met (77%): 'Operational SEV1 incidents have a 15-min...'; Fact met (63%): 'Security SEC-1 incidents have a 10-minut...'"
+    },
+    {
+      "id": "MDOC-03",
+      "category": "Multi-Document",
+      "question": "How is secrets encryption configured according to the EKS Handbook, and what specific key rotation interval and syncing operator are mandated by the Security Standard?",
+      "target_pages": [
+        6,
+        1
+      ],
+      "retrieved_pages": [
+        1,
+        5,
+        6,
+        7
+      ],
+      "retrieval_hit": true,
+      "recall_score": 1.0,
+      "answer_correct": true,
+      "fact_score": 1.0,
+      "latency_s": 5.29,
+      "answer": "Based on the provided documents, here is how secrets encryption, key rotation, and syncing are configured and mandated:\n\n* **Secrets Encryption Configuration:** According to the EKS Handbook, Kubernetes Secrets are encrypted at rest with the KMS key aliased `alias/eks-prod-secrets` [doc_v2_handb_p5_c014]. Furthermore, the Security Policy states that all Kubernetes Secrets at rest must be encrypted using AWS KMS customer managed keys [doc_v2_secur_p1_c002].\n* **Key Rotation Interval:** KMS keys must be configured for automatic rotation every 90 days [doc_v2_secur_p1_c002].\n* **Mandated Syncing Operator:** The External Secrets Operator (ESO) is the only approved mechanism for synchronizing secrets from AWS Secrets Manager [doc_v2_secur_p1_c002].",
+      "details": "Fact met (87%): 'EKS Handbook specifies KMS encryption us...'; Fact met (77%): 'Security Standard mandates automatic KMS...'; Fact met (100%): 'External Secrets Operator (ESO) is the o...'"
+    },
+    {
+      "id": "MDOC-04",
+      "category": "Multi-Document",
+      "question": "What vulnerability remediation SLA is required for Critical container findings in the Security Standard, and how are non-compliant deployments blocked in production?",
+      "target_pages": [
+        6,
+        2
+      ],
+      "retrieved_pages": [
+        2,
+        3,
+        12
+      ],
+      "retrieval_hit": false,
+      "recall_score": 0.5,
+      "answer_correct": true,
+      "fact_score": 1.0,
+      "latency_s": 4.8,
+      "answer": "Based on the provided documents, here are the answers regarding vulnerability remediation SLAs and blocking non-compliant deployments:\n\n* **Remediation SLA for Critical container findings:** Critical container image vulnerabilities (defined as remote code execution or privilege escalation) must be remediated within **24 hours** [doc_v2_secur_p2_c003].\n* **Blocking non-compliant deployments:** Images containing unpatched CRITICAL vulnerabilities older than 24 hours are automatically blocked by the Kyverno admission controller [doc_v2_secur_p2_c003].",
+      "details": "Fact met (62%): 'Security Standard requires Critical vuln...'; Fact met (90%): 'Kyverno admission controller blocks imag...'"
+    },
+    {
+      "id": "MDOC-05",
+      "category": "Multi-Document",
+      "question": "Compare the standard change window permissions in the EKS Handbook with the session duration limits and MFA requirements in the Security Standard.",
+      "target_pages": [
+        2,
+        1
+      ],
+      "retrieved_pages": [
+        1,
+        2,
+        12
+      ],
+      "retrieval_hit": true,
+      "recall_score": 1.0,
+      "answer_correct": false,
+      "fact_score": 0.0,
+      "latency_s": 4.48,
+      "answer": "Information regarding 'Compare the standard change window permissions in the EKS Handbook with the session duration limits and MFA requirements in the Security Standard.' was not found in the uploaded documents. The topic may not be covered in the available documentation.",
+      "details": "Answer declared not found or empty."
+    }
+  ]
+}
