@@ -21,6 +21,7 @@ import {
   ChevronDown
 } from 'lucide-react'
 import ClaudeMarkdown, { stripChunkIdCitations } from '../components/ClaudeMarkdown'
+import { useChat } from '../context/ChatContext'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
 
@@ -44,6 +45,9 @@ const STARTER_PROMPTS = [
 ]
 
 export default function AskAI() {
+  const { activeChat, saveChat, startNewChat } = useChat()
+  const [currentChatId, setCurrentChatId] = useState(null)
+
   // Query & Ask States
   const [inputVal, setInputVal] = useState('')
   const [currentQuestion, setCurrentQuestion] = useState('')
@@ -58,6 +62,24 @@ export default function AskAI() {
   const [messageFeedback, setMessageFeedback] = useState({}) // { [msgId]: 'good' | 'bad' | null }
   const [copiedMsgId, setCopiedMsgId] = useState(null)
   const [bookmarkedMsgs, setBookmarkedMsgs] = useState({}) // { [msgId]: boolean }
+
+  // Synchronize conversation state when a chat is selected from Chat History or New Chat is initiated
+  useEffect(() => {
+    if (activeChat && activeChat.messages && activeChat.messages.length > 0) {
+      setThreadMessages(activeChat.messages)
+      setCurrentChatId(activeChat.id)
+      setHasSearched(true)
+      const lastMsg = activeChat.messages[activeChat.messages.length - 1]
+      if (lastMsg && lastMsg.role === 'assistant') {
+        setAnswerData(lastMsg.data)
+      }
+    } else if (!activeChat) {
+      setThreadMessages([])
+      setCurrentChatId(null)
+      setHasSearched(false)
+      setAnswerData(null)
+    }
+  }, [activeChat])
 
   // Document Filtering (optional document_id on ask)
   const [selectedDocId, setSelectedDocId] = useState('')
@@ -429,13 +451,24 @@ export default function AskAI() {
         }
 
         setAnswerData(parsed)
-        setThreadMessages(prev =>
-          prev.map(m =>
+        setThreadMessages(prev => {
+          const updated = prev.map(m =>
             m.id === assistantMsgId
               ? { ...m, isGenerating: false, data: parsed, error: null }
               : m
           )
-        )
+          const firstQuestion = updated.find(m => m.role === 'user')?.text || questionText
+          const assignedId = currentChatId || `chat_${Date.now()}`
+          if (!currentChatId) setCurrentChatId(assignedId)
+
+          saveChat({
+            id: assignedId,
+            title: firstQuestion.slice(0, 100),
+            messages: updated
+          })
+
+          return updated
+        })
         return
       }
 
@@ -512,6 +545,8 @@ export default function AskAI() {
     setMessageFeedback({})
     setCopiedMsgId(null)
     setBookmarkedMsgs({})
+    setCurrentChatId(null)
+    startNewChat()
   }
 
   const activeFilteredDoc = documents.find(d => d.id === selectedDocId)
@@ -635,20 +670,17 @@ export default function AskAI() {
       {isGlowActive && (
         <div
           key={glowKey}
-          className="google-ai-border-track"
+          className="marvo-search-trace-track"
           onAnimationEnd={() => setIsGlowActive(false)}
         >
-          <div className="google-ai-blur-halo">
-            <div className="google-ai-blur-halo-inner" />
-          </div>
-          <div className="google-ai-crisp-ring">
-            <div className="google-ai-conic-inner" />
+          <div className="marvo-trace-line">
+            <div className="marvo-trace-conic" />
           </div>
         </div>
       )}
 
       <section
-        className={`search-card-container ${isGlowActive ? 'glow-active' : ''}`}
+        className={`search-card-container ${isGlowActive ? 'trace-active' : ''}`}
         onClick={triggerAiGlow}
       >
         <input
@@ -816,33 +848,24 @@ export default function AskAI() {
 
     return (
       <div key={msg.id} className="claude-assistant-message-row">
-        <div className="claude-assistant-avatar" title="Claude / Enterprise AI">
-          <Sparkles size={16} />
-        </div>
-
         <div className="claude-assistant-container">
-          <div className="claude-assistant-header">
-            <div className="claude-assistant-identity">
-              <span className="claude-assistant-name">Enterprise AI</span>
-              {msg.data?.stats?.retrievalStrength && (
-                <span className={`claude-retrieval-pill strength-${msg.data.stats.retrievalStrength.toLowerCase()}`}>
-                  {msg.data.stats.retrievalStrength} confidence
-                </span>
-              )}
-            </div>
-
-            {msg.data?.stats && (
+          {/* Subtle Stats Meta (Enterprise AI logo and text completely removed) */}
+          {msg.data?.stats && (
+            <div className="claude-assistant-header" style={{ justifyContent: 'flex-end', marginBottom: '4px' }}>
               <span className="claude-assistant-meta">
                 {msg.data.stats.responseTime} • {msg.data.stats.sourcesUsed} source{msg.data.stats.sourcesUsed === 1 ? '' : 's'} verified
               </span>
-            )}
-          </div>
+            </div>
+          )}
 
-          {/* 1. Loading / Shimmer State */}
+          {/* 1. Loading State: Three Waving Dots */}
           {msg.isGenerating && (
-            <div className="claude-generating-stream">
-              <Loader2 size={16} className="spin-icon" />
-              <span>Synthesizing verified answer with citations...</span>
+            <div className="chat-waving-dots-container" aria-label="Loading response...">
+              <div className="chat-waving-dots">
+                <span className="chat-dot dot-1" />
+                <span className="chat-dot dot-2" />
+                <span className="chat-dot dot-3" />
+              </div>
             </div>
           )}
 
@@ -1148,27 +1171,6 @@ export default function AskAI() {
 
           {/* Centered Search Bar */}
           {renderSearchInputCard({ isBottomDock: false })}
-
-          {/* Starter Prompts below the search card */}
-          <div className="starter-prompts-section">
-            <span className="starter-prompts-title">Suggested questions</span>
-            <div className="starter-prompts-grid">
-              {STARTER_PROMPTS.map((prompt, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  className="starter-prompt-card"
-                  onClick={() => {
-                    setInputVal(prompt.query)
-                    handleAskQuestion(prompt.query)
-                  }}
-                >
-                  <span className="prompt-card-text">{prompt.query}</span>
-                  <span className="prompt-card-meta">{prompt.desc}</span>
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
     )
@@ -1280,9 +1282,6 @@ export default function AskAI() {
       <div className="claude-bottom-dock">
         <div className="claude-dock-inner">
           {renderSearchInputCard({ isBottomDock: true })}
-          <span className="claude-dock-disclaimer">
-            Antigravity AI synthesizes answers strictly from verified document excerpts.
-          </span>
         </div>
       </div>
     </div>

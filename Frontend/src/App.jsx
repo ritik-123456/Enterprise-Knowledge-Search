@@ -10,14 +10,23 @@ import {
   PanelLeft,
   LogOut,
   User as UserIcon,
-  Settings as SettingsIcon
+  Settings as SettingsIcon,
+  SquarePen,
+  Search,
+  LayoutGrid,
+  Clock,
+  Compass,
+  GraduationCap
 } from 'lucide-react'
 import './App.css'
 import { AVATARS } from './components/BrandIcons'
 import AskAI from './pages/AskAI'
 import Settings from './pages/Settings'
+import ChatHistory from './pages/ChatHistory'
 import { useAuth } from './context/AuthContext'
+import { useChat } from './context/ChatContext'
 import LoginModal from './components/LoginModal'
+import MarvoLogo from './components/MarvoLogo'
 
 const GoogleIcon = () => (
   <svg className="google-icon-svg" viewBox="0 0 24 24">
@@ -40,10 +49,33 @@ const GoogleIcon = () => (
   </svg>
 )
 
+const GuestAvatarIcon = ({ size = 20, className = '' }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    style={{ display: 'block', flexShrink: 0 }}
+  >
+    <circle cx="12" cy="12" r="10" />
+    <circle cx="12" cy="10" r="3.2" />
+    <path d="M5.5 19.5c1.2-3 3.5-4.5 6.5-4.5s5.3 1.5 6.5 4.5" />
+  </svg>
+)
+
 const SUBMENU_METADATA = {
   'Ask AI': {
     title: 'Ask AI',
     subtitle: 'Get accurate answers from your company knowledge.'
+  },
+  'Chats': {
+    title: 'Chat Search & History',
+    subtitle: 'Search and reopen previous conversations stored in Supabase.'
   },
   'Settings': {
     title: 'Settings',
@@ -53,165 +85,354 @@ const SUBMENU_METADATA = {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('Ask AI')
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
   const [showUserDropdown, setShowUserDropdown] = useState(false)
 
   const { user, isAuthenticated, logout, setIsLoginModalOpen } = useAuth()
+  const { chats, activeChat, loadChat, startNewChat } = useChat()
 
   const currentMeta = SUBMENU_METADATA[activeTab] || SUBMENU_METADATA['Ask AI']
 
   return (
     <div className="app-container">
-      {/* ===================== SIDEBAR ===================== */}
-      <aside className={`sidebar ${isSidebarOpen ? 'open' : 'collapsed'}`}>
-        <div className="sidebar-top">
-          {/* Brand Header with Close/Slide Button */}
-          <div className="brand-header">
-            <div className="brand-header-main">
-              <div className="brand-icon-box">
-                <Sparkles size={18} />
-              </div>
-              <div className="brand-title-wrap">
-                <span className="brand-title-line">AI Internal</span>
-                <span className="brand-title-line">Knowledge Search</span>
-              </div>
-            </div>
-
-            <button
-              className="sidebar-close-btn"
-              onClick={() => setIsSidebarOpen(false)}
-              title="Close sidebar"
-            >
-              <PanelLeftClose size={18} />
-            </button>
-          </div>
-
-          {/* Navigation Items */}
-          <nav className="sidebar-nav">
-            <button
-              className={`nav-item ${activeTab === 'Ask AI' ? 'active' : ''}`}
-              onClick={() => setActiveTab('Ask AI')}
-            >
-              <Sparkles size={18} className="nav-icon" />
-              <span>Ask AI</span>
-            </button>
-
-            <button
-              className={`nav-item ${activeTab === 'Settings' ? 'active' : ''}`}
-              onClick={() => setActiveTab('Settings')}
-            >
-              <SettingsIcon size={18} className="nav-icon" />
-              <span>Settings</span>
-            </button>
-          </nav>
-        </div>
-
-        {/* Sidebar Footer */}
-        <div className="sidebar-bottom">
-          <div className="pro-plan-card">
-            <div className="pro-header">
-              <Sparkles size={16} className="pro-icon" />
-              <span>Pro Plan</span>
-            </div>
-            <div className="pro-usage-row">
-              <span>Usage this month</span>
-              <span className="pro-percentage">78%</span>
-            </div>
-            <div className="progress-track">
-              <div className="progress-bar-fill" style={{ width: '78%' }}></div>
-            </div>
-            <span className="pro-reset-text">Resets in 12 days</span>
-          </div>
-
-          {isAuthenticated && user ? (
-            <div className="user-profile-menu-container">
-              <div
-                className="user-profile-card"
-                onClick={() => setShowUserDropdown(!showUserDropdown)}
-                style={{ cursor: 'pointer' }}
-                title="Account Settings"
-              >
-                <div className="user-profile-left">
-                  <img
-                    src={user.picture || AVATARS['Olivia Rhye']}
-                    alt={user.name}
-                    className="user-avatar-img"
-                    referrerPolicy="no-referrer"
-                    onError={(e) => { e.target.src = AVATARS['Olivia Rhye'] }}
-                  />
-                  <div className="user-name-box">
-                    <span className="user-display-name">{user.name}</span>
-                    <span className="user-email-text">{user.email}</span>
-                  </div>
-                </div>
-                <MoreVertical size={16} style={{ color: 'var(--text-muted)' }} />
-              </div>
-
-              {showUserDropdown && (
-                <div className="user-profile-dropdown">
-                  <div className="user-dropdown-header">
-                    <div className="user-dropdown-name">{user.name}</div>
-                    <div className="user-dropdown-email">{user.email}</div>
-                    <span className="user-dropdown-role-tag">{user.role || 'Member'}</span>
-                  </div>
-                  <button
-                    className="user-dropdown-item logout"
-                    onClick={() => {
-                      setShowUserDropdown(false)
-                      logout()
-                    }}
-                  >
-                    <LogOut size={14} />
-                    <span>Sign Out</span>
-                  </button>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="sidebar-signin-banner">
-              <span className="sidebar-signin-text">Sign in with Google to sync audit history & access controls</span>
+      {/* ===================== GEMINI-STYLE SIDEBAR ===================== */}
+      <aside className={`gemini-sidebar ${isSidebarExpanded ? 'expanded' : ''}`}>
+        {!isSidebarExpanded ? (
+          /* ================= SHORT SIDEBAR RAIL (52px) ================= */
+          <>
+            <div className="gemini-sidebar-top">
+              {/* Top Logo Button with Hover Swap to Open Sidebar Icon */}
               <button
-                className="sidebar-signin-btn"
-                onClick={() => setIsLoginModalOpen(true)}
+                className="gemini-logo-toggle-btn"
+                onClick={() => setIsSidebarExpanded(true)}
+                title="Open sidebar"
+                aria-label="Open sidebar"
               >
-                <GoogleIcon />
-                <span>Sign in with Google</span>
+                <span className="logo-swap-default">
+                  <MarvoLogo size={20} />
+                </span>
+                <span className="logo-swap-hover">
+                  <PanelLeftOpen size={18} />
+                </span>
+              </button>
+
+              {/* Action Icons Stack */}
+              <div className="gemini-nav-stack">
+                <button
+                  className={`gemini-rail-btn ${activeTab === 'Ask AI' && !activeChat ? 'active' : ''}`}
+                  onClick={() => {
+                    startNewChat()
+                    setActiveTab('Ask AI')
+                  }}
+                  title="New Chat / Ask AI"
+                >
+                  <SquarePen size={18} />
+                </button>
+
+                {/* Search to Learning & Guidance: Only shown when signed in */}
+                {isAuthenticated && (
+                  <>
+                    <button
+                      className={`gemini-rail-btn ${activeTab === 'Chats' ? 'active' : ''}`}
+                      onClick={() => setActiveTab('Chats')}
+                      title="Search Chats & Stored History"
+                    >
+                      <Search size={18} />
+                    </button>
+
+                    <button
+                      className="gemini-rail-btn"
+                      onClick={() => setActiveTab('Ask AI')}
+                      title="Workspaces & Data"
+                    >
+                      <LayoutGrid size={18} />
+                    </button>
+
+                    <button
+                      className="gemini-rail-btn"
+                      onClick={() => setActiveTab('Ask AI')}
+                      title="Explore"
+                    >
+                      <Compass size={18} />
+                    </button>
+
+                    <button
+                      className="gemini-rail-btn"
+                      onClick={() => setActiveTab('Ask AI')}
+                      title="Recent Activity"
+                    >
+                      <Clock size={18} />
+                    </button>
+
+                    <button
+                      className="gemini-rail-btn"
+                      onClick={() => setActiveTab('Ask AI')}
+                      title="Learning & Guidance"
+                    >
+                      <GraduationCap size={18} />
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Bottom: Settings above User Profile */}
+            <div className="gemini-sidebar-bottom">
+              <button
+                className={`gemini-rail-btn ${activeTab === 'Settings' ? 'active' : ''}`}
+                onClick={() => setActiveTab('Settings')}
+                title="Settings"
+              >
+                <SettingsIcon size={18} />
+              </button>
+
+              {/* User Profile Avatar / Sign-In */}
+              <div
+                className="gemini-avatar-wrapper"
+                onClick={() => {
+                  if (isAuthenticated && user) {
+                    setShowUserDropdown(!showUserDropdown)
+                  } else {
+                    setIsLoginModalOpen(true)
+                  }
+                }}
+                title={isAuthenticated && user ? user.name : "Sign In with Google"}
+              >
+                {isAuthenticated && user?.picture ? (
+                  <img
+                    src={user.picture}
+                    alt={user.name || "User"}
+                    className="gemini-avatar-img"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : isAuthenticated && user?.name ? (
+                  <div className="gemini-avatar-circle">
+                    {user.name[0].toUpperCase()}
+                  </div>
+                ) : (
+                  <div className="gemini-guest-avatar-box">
+                    <GuestAvatarIcon size={20} />
+                  </div>
+                )}
+
+                {/* Profile Dropdown Menu */}
+                {showUserDropdown && isAuthenticated && user && (
+                  <div className="gemini-user-dropdown" onClick={(e) => e.stopPropagation()}>
+                    <div className="user-dropdown-header">
+                      <div className="user-dropdown-name">{user.name}</div>
+                      <div className="user-dropdown-email">{user.email}</div>
+                      <span className="user-dropdown-role-tag">{user.role || 'Member'}</span>
+                    </div>
+                    <button
+                      className="user-dropdown-item logout"
+                      onClick={() => {
+                        setShowUserDropdown(false)
+                        logout()
+                      }}
+                    >
+                      <LogOut size={14} />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        ) : (
+          /* ================= COMPLETE EXPANDED SIDEBAR (250px) ================= */
+          <div className="gemini-expanded-container">
+            {/* Expanded Header */}
+            <div className="gemini-expanded-header">
+              <div
+                className="gemini-expanded-brand"
+                onClick={() => {
+                  setActiveTab('Ask AI')
+                  setIsSidebarExpanded(false)
+                }}
+                title="MARVO AI"
+              >
+                <MarvoLogo size={20} />
+                <span className="gemini-brand-text">MARVO</span>
+                <span className="gemini-brand-badge">AI</span>
+              </div>
+              <button
+                className="gemini-sidebar-close-btn"
+                onClick={() => setIsSidebarExpanded(false)}
+                title="Collapse sidebar"
+                aria-label="Collapse sidebar"
+              >
+                <PanelLeftClose size={18} />
               </button>
             </div>
-          )}
-        </div>
+
+            {/* Expanded Navigation Links */}
+            <div className="gemini-expanded-nav">
+              <button
+                className={`gemini-expanded-nav-item ${activeTab === 'Ask AI' && !activeChat ? 'active' : ''}`}
+                onClick={() => {
+                  startNewChat()
+                  setActiveTab('Ask AI')
+                  setIsSidebarExpanded(false)
+                }}
+              >
+                <SquarePen size={17} className="expanded-nav-icon" />
+                <span className="expanded-nav-label">New Chat</span>
+              </button>
+
+              {/* Search to Learning & Guidance: Only shown when signed in */}
+              {isAuthenticated && (
+                <>
+                  <button
+                    className={`gemini-expanded-nav-item ${activeTab === 'Chats' ? 'active' : ''}`}
+                    onClick={() => {
+                      setActiveTab('Chats')
+                      setIsSidebarExpanded(false)
+                    }}
+                  >
+                    <Search size={17} className="expanded-nav-icon" />
+                    <span className="expanded-nav-label">Search Chats</span>
+                  </button>
+
+                  <button
+                    className="gemini-expanded-nav-item"
+                    onClick={() => {
+                      setActiveTab('Ask AI')
+                      setIsSidebarExpanded(false)
+                    }}
+                  >
+                    <LayoutGrid size={17} className="expanded-nav-icon" />
+                    <span className="expanded-nav-label">Workspaces & Data</span>
+                  </button>
+
+                  <button
+                    className="gemini-expanded-nav-item"
+                    onClick={() => {
+                      setActiveTab('Ask AI')
+                      setIsSidebarExpanded(false)
+                    }}
+                  >
+                    <Compass size={17} className="expanded-nav-icon" />
+                    <span className="expanded-nav-label">Explore</span>
+                  </button>
+
+                  <button
+                    className="gemini-expanded-nav-item"
+                    onClick={() => {
+                      setActiveTab('Ask AI')
+                      setIsSidebarExpanded(false)
+                    }}
+                  >
+                    <Clock size={17} className="expanded-nav-icon" />
+                    <span className="expanded-nav-label">Recent Activity</span>
+                  </button>
+
+                  <button
+                    className="gemini-expanded-nav-item"
+                    onClick={() => {
+                      setActiveTab('Ask AI')
+                      setIsSidebarExpanded(false)
+                    }}
+                  >
+                    <GraduationCap size={17} className="expanded-nav-icon" />
+                    <span className="expanded-nav-label">Guides & Docs</span>
+                  </button>
+                </>
+              )}
+            </div>
+
+            {/* Recents Section in Expanded Sidebar: Only shown when signed in */}
+            {isAuthenticated && (
+              <div className="gemini-expanded-recents">
+                <div className="gemini-recents-heading">Recent Conversations</div>
+                <div className="gemini-recents-list">
+                  {chats && chats.length > 0 ? (
+                    chats.slice(0, 5).map((c) => (
+                      <div
+                        key={c.id}
+                        className={`gemini-recent-item ${activeChat?.id === c.id ? 'active' : ''}`}
+                        onClick={async () => {
+                          await loadChat(c.id)
+                          setActiveTab('Ask AI')
+                          setIsSidebarExpanded(false)
+                        }}
+                        title={c.title}
+                      >
+                        <span className="recent-dot">•</span>
+                        <span className="recent-text">{c.title}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="gemini-recent-empty">No conversations yet</div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Expanded Bottom */}
+            <div className="gemini-expanded-bottom">
+              <button
+                className={`gemini-expanded-nav-item ${activeTab === 'Settings' ? 'active' : ''}`}
+                onClick={() => {
+                  setActiveTab('Settings')
+                  setIsSidebarExpanded(false)
+                }}
+              >
+                <SettingsIcon size={17} className="expanded-nav-icon" />
+                <span className="expanded-nav-label">Settings</span>
+              </button>
+
+              {/* User Profile or Sign-In in Expanded Mode */}
+              {isAuthenticated && user ? (
+                <div className="gemini-expanded-user-card">
+                  <div className="gemini-expanded-user-left">
+                    <img
+                      src={user.picture || AVATARS['Olivia Rhye']}
+                      alt={user.name}
+                      className="gemini-avatar-img"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="gemini-expanded-user-text">
+                      <span className="expanded-user-name">{user.name}</span>
+                      <span className="expanded-user-email">{user.email}</span>
+                    </div>
+                  </div>
+                  <button
+                    className="gemini-expanded-logout-btn"
+                    onClick={() => logout()}
+                    title="Sign Out"
+                  >
+                    <LogOut size={15} />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  className="gemini-expanded-signin-btn"
+                  onClick={() => setIsLoginModalOpen(true)}
+                >
+                  <GuestAvatarIcon size={18} />
+                  <span>Sign in with Google</span>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </aside>
 
       {/* ===================== MAIN CONTENT WRAPPER ===================== */}
       <main className="main-wrapper">
-        {/* Top Header with ChatGPT-style top Logo & Slide Button */}
+        {/* Top Header */}
         <header className="top-header">
           <div className="top-header-left">
-            {!isSidebarOpen && (
-              <button
-                className="sidebar-toggle-btn"
-                onClick={() => setIsSidebarOpen(true)}
-                title="Open sidebar"
-              >
-                <PanelLeftOpen size={18} />
-              </button>
-            )}
-
-            {/* Logo On Top like ChatGPT */}
+            {/* MARVO Top Brand */}
             <div
               className="top-logo-badge"
-              title="AI Internal Knowledge Search"
+              title="MARVO AI Knowledge Search"
+              onClick={() => setActiveTab('Ask AI')}
             >
-              <div className="top-logo-icon">
-                <Sparkles size={15} />
-              </div>
-              <span className="top-logo-title">AI Internal Knowledge Search</span>
-            </div>
-
-            <div className="top-header-breadcrumb">
-              <span className="breadcrumb-divider">/</span>
-              <span className="breadcrumb-current-tab">{currentMeta.title}</span>
+              <MarvoLogo size={18} className="top-brand-logo" />
+              <span className="top-logo-title">MARVO</span>
+              <span className="top-ai-badge">AI</span>
             </div>
           </div>
 
@@ -292,6 +513,12 @@ export default function App() {
 
         {/* Main Content View */}
         {activeTab === 'Ask AI' && <AskAI />}
+        {activeTab === 'Chats' && (
+          <ChatHistory
+            onOpenChat={() => setActiveTab('Ask AI')}
+            onNewChat={() => setActiveTab('Ask AI')}
+          />
+        )}
         {activeTab === 'Settings' && <Settings />}
 
         {/* Google Authentication Dialog */}

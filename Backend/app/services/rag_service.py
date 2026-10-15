@@ -1,7 +1,7 @@
 import logging
 import re
 import time
-from typing import List, Optional, Tuple, Dict, Any
+from typing import List, Optional, Tuple, Dict, Any, Set
 
 from rank_bm25 import BM25Okapi, BM25Plus
 
@@ -155,7 +155,9 @@ def strip_chunk_id_citations(text: str) -> str:
     )
     # 2. General bracket with _p and _c chunk ID pattern
     cleaned = re.sub(r'\s*\[\s*[^\]]*_p\d+_c\d+[^\]]*\s*\]', '', cleaned)
-    # 3. Clean up spaces before punctuation
+    # 3. Strip any certainty/confidence prefixes or meta-tags (e.g. "high confidence")
+    cleaned = re.sub(r'(?i)\(?\bhigh\s+confidence\b:?\)?\s*', '', cleaned)
+    # 4. Clean up spaces before punctuation
     cleaned = re.sub(r'\s+([.,;:!?])', r'\1', cleaned)
     return cleaned.strip()
 
@@ -503,7 +505,8 @@ class RAGService:
                 "2. Cite the relevant chunk_id inline in brackets immediately following each fact, policy, or claim (e.g. '[chunk_id]').\n"
                 "3. If the context does not contain sufficient information to answer the question, state clearly: "
                 "'Information regarding this topic was not found in the uploaded documents.'\n"
-                "4. When answering, provide a direct factual answer. If the context contains a sequence, steps, or numbered items, preserve the numbered list."
+                "4. When answering, provide a direct factual answer. If the context contains a sequence, steps, or numbered items, preserve the numbered list.\n"
+                "5. Do NOT include meta-commentary, confidence scores, or certainty declarations (never write 'high confidence' or confidence metrics)."
             )
 
             user_prompt = f"Context Excerpts:\n{context_text}\n\nQuestion: {question}"
@@ -809,7 +812,8 @@ class RAGService:
                 "4. When multiple sub-questions or distinct aspects are asked, answer each one explicitly using clear bullet points or section headings.\n"
                 "5. If the context does not contain sufficient information to answer the question, state clearly: "
                 "'Information regarding this topic was not found in the uploaded documents.'\n"
-                "6. Preserve numbered lists, exact thresholds, and commands."
+                "6. Preserve numbered lists, exact thresholds, and commands.\n"
+                "7. Do NOT include meta-commentary, confidence scores, or certainty declarations (never write 'high confidence' or confidence metrics)."
             )
 
             user_prompt = f"Context Excerpts:\n{context_text}\n\nQuestion: {question}"

@@ -50,6 +50,18 @@ class Settings(BaseSettings):
         description="Google OAuth 2.0 Client Secret (strictly confidential)"
     )
 
+    # Supabase Cloud Database Credentials (Strictly confidential)
+    SUPABASE_URL: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("SUPABASE_URL", "SUPABASE_PROJECT_URL", "NEXT_PUBLIC_SUPABASE_URL", "VITE_SUPABASE_URL"),
+        description="Supabase project URL"
+    )
+    SUPABASE_KEY: Optional[SecretStr] = Field(
+        default=None,
+        validation_alias=AliasChoices("SUPABASE_KEY", "SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_SERVICE_KEY", "SUPABASE_API_KEY"),
+        description="Supabase API key / service key (strictly confidential)"
+    )
+
 
     # Qdrant Vector Database Settings
     QDRANT_URL: Optional[str] = Field(
@@ -218,6 +230,28 @@ class Settings(BaseSettings):
             or key.startswith("AQ.")
             or key.startswith("AIza")
             or (bool(self.OPENAI_BASE_URL) and "generativelanguage.googleapis.com" in str(self.OPENAI_BASE_URL))
+        )
+
+    @property
+    def active_supabase_url(self) -> Optional[str]:
+        """Returns the configured Supabase URL if present."""
+        if self.SUPABASE_URL and self.SUPABASE_URL.strip():
+            return self.SUPABASE_URL.strip()
+        return os.getenv("SUPABASE_URL") or os.getenv("SUPABASE_PROJECT_URL")
+
+    @property
+    def active_supabase_key(self) -> Optional[str]:
+        """Returns the configured Supabase key without exposing it in logs."""
+        if self.SUPABASE_KEY:
+            val = self.SUPABASE_KEY.get_secret_value()
+            if val and val.strip():
+                return val.strip()
+        return (
+            os.getenv("SUPABASE_KEY")
+            or os.getenv("SUPABASE_ANON_KEY")
+            or os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+            or os.getenv("SUPABASE_SERVICE_KEY")
+            or os.getenv("SUPABASE_API_KEY")
         )
 
     @model_validator(mode="after")

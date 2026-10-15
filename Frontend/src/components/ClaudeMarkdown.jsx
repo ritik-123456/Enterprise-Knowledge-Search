@@ -18,7 +18,9 @@ export function stripChunkIdCitations(text) {
     .replace(/\s*\[\s*chunk_id\s*\]/gi, '')
     // 4. Remove bare unbracketed chunk IDs at end of string/sentence
     .replace(/\s*\b[a-f0-9]{8,}_p\d+_c\d+\b/gi, '')
-    // 5. Clean up awkward spacing before punctuation caused by removing inline tags
+    // 5. Strip certainty/confidence prefixes or meta-tags
+    .replace(/(?:\(?\bhigh\s+confidence\b:?\)?\s*)/gi, '')
+    // 6. Clean up awkward spacing before punctuation caused by removing inline tags
     .replace(/\s+([.,;:!?])/g, '$1')
     .trim()
 }

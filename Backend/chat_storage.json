@@ -1,0 +1,124 @@
+[
+  {
+    "id": "chat_1792078577001",
+    "user_id": "112675643328808722449",
+    "user_email": "ritikkr274@gmail.com",
+    "title": "Tell about octofeature",
+    "messages": [
+      {
+        "id": "u-1792078568009-9qyy",
+        "role": "user",
+        "text": "Tell about octofeature",
+        "timestamp": "09:06 pm"
+      },
+      {
+        "id": "a-1792078568009-rqs9",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": false,
+          "answer": "Information regarding 'Tell about octofeature' was not found in the uploaded documents. The topic may not be covered in the available documentation.",
+          "lead": "Information regarding 'Tell about octofeature' was not found in the uploaded documents. The topic may not be covered in the available documentation.",
+          "keyPoints": [
+            "Please upload the relevant PDF documentation using the Attach button.",
+            "Verify your query keywords match terminology in the uploaded policy or handbook."
+          ],
+          "stats": {
+            "responseTime": "8.99s",
+            "sourcesUsed": 0,
+            "retrievalStrength": "High"
+          },
+          "sources": []
+        },
+        "error": null,
+        "timestamp": "09:06 pm"
+      },
+      {
+        "id": "u-1792078601559-rrwp",
+        "role": "user",
+        "text": "Tell about feature and octofact",
+        "timestamp": "09:06 pm"
+      },
+      {
+        "id": "a-1792078601559-6d6z",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": true,
+          "answer": "Based on the provided document, the features and octopus facts are detailed below:\n\n|Feature|Octopus fact|\n|---|---|\n|Arms|8 (each lined with suckers)| |\n|Hearts|3| |\n|Blood color|Blue (copper-based)| |\n|Lifespan|1 to 5 years, depending on species| |\n|Species known|300+| |",
+          "lead": "Based on the provided document, the features and octopus facts are detailed below:\n\n|Feature|Octopus fact|\n|---|---|\n|Arms|8 (each lined with suckers)| |\n|Hearts|3| |\n|Blood color|Blue (copper-based)| |\n|Lifespan|1 to 5 years, depending on species| |\n|Species known|300+| |",
+          "keyPoints": [],
+          "stats": {
+            "responseTime": "7.43s",
+            "sourcesUsed": 1,
+            "retrievalStrength": "High"
+          },
+          "sources": [
+            {
+              "id": 1,
+              "source_name": "octopus_guide.pdf",
+              "page": "Page 4",
+              "page_start": 4,
+              "page_end": 4,
+              "snippet": "... The veined octopus has been filmed gathering discarded coconut shell halves, carrying them across the seafloor, and assembling them into a portable shelter. ..."
+            }
+          ]
+        },
+        "error": null,
+        "timestamp": "09:06 pm"
+      }
+    ],
+    "created_at": "2026-10-15T15:36:49.001166+00:00",
+    "updated_at": "2026-10-15T15:36:49.001166+00:00"
+  },
+  {
+    "id": "chat_1792078377965",
+    "user_id": "112675643328808722449",
+    "user_email": "ritikkr274@gmail.com",
+    "title": "Tell about defense tool kit at a glance",
+    "messages": [
+      {
+        "id": "u-1792078356032-e174",
+        "role": "user",
+        "text": "Tell about defense tool kit at a glance",
+        "timestamp": "09:02 pm"
+      },
+      {
+        "id": "a-1792078356032-unmy",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": true,
+          "answer": "Based on the provided document, the defense toolkit includes the following:\n\n- **Camouflage:** blend into the background in under a second.\n- **Mimicry:** imitate more dangerous animals.\n- **Ink cloud:** create a smokescreen and confuse predators.\n- **Jet propulsion:** burst away at surprising speed.\n- **Venom:** the blue-ringed octopus carries a potent toxin, despite weighing only a few dozen grams.",
+          "lead": "Based on the provided document, the defense toolkit includes the following:",
+          "keyPoints": [
+            "**Camouflage:** blend into the background in under a second.",
+            "**Mimicry:** imitate more dangerous animals.",
+            "**Ink cloud:** create a smokescreen and confuse predators.",
+            "**Jet propulsion:** burst away at surprising speed.",
+            "**Venom:** the blue-ringed octopus carries a potent toxin, despite weighing only a few dozen grams."
+          ],
+          "stats": {
+            "responseTime": "21.91s",
+            "sourcesUsed": 1,
+            "retrievalStrength": "High"
+          },
+          "sources": [
+            {
+              "id": 1,
+              "source_name": "octopus_guide.pdf",
+              "page": "Page 3",
+              "page_start": 3,
+              "page_end": 3,
+              "snippet": "... - **Ink cloud:** create a smokescreen and confuse predators. - **Jet propulsion:** burst away at surprising speed."
+            }
+          ]
+        },
+        "error": null,
+        "timestamp": "09:02 pm"
+      }
+    ],
+    "created_at": "2026-10-15T15:32:57.970845+00:00",
+    "updated_at": "2026-10-15T15:32:57.970845+00:00"
+  }
+]

@@ -21,7 +21,6 @@ export default function Settings() {
     {
       id: 'dark',
       name: 'Dark Theme',
-      tag: 'Standard',
       icon: Moon,
       headline: 'Deep neutral dark theme with high-contrast accents',
       description: 'The standard dark mode designed for optimal focus, zero eye fatigue, and sleek borderless prose.',
@@ -35,7 +34,6 @@ export default function Settings() {
     {
       id: 'light',
       name: 'Light Theme',
-      tag: 'ChatGPT Style',
       icon: Sun,
       headline: 'Minimalist, crisp white canvas following ChatGPT light mode',
       description: 'Clean off-white surfaces, crisp typography, and subtle borders inspired by ChatGPT for maximum daytime clarity.',
@@ -49,7 +47,6 @@ export default function Settings() {
     {
       id: 'green',
       name: 'Green Theme',
-      tag: '#E3F6EF & #C8EEDF',
       icon: Sparkles,
       headline: 'Pastel mint with #E3F6EF lighter and #C8EEDF darker regions',
       description: 'A soothing ice-mint aesthetic featuring #E3F6EF for light canvas areas and #C8EEDF for surfaces & sidebar.',
@@ -101,11 +98,17 @@ export default function Settings() {
               <div
                 key={item.id}
                 className={`theme-option-card ${isSelected ? 'selected' : ''}`}
-                onClick={() => setTheme(item.id)}
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  setTheme(item.id)
+                }}
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    e.stopPropagation()
                     setTheme(item.id)
                   }
                 }}

@@ -29,6 +29,13 @@ export function ThemeProvider({ children }) {
 
   const setTheme = (newTheme) => {
     if (['dark', 'light', 'green'].includes(newTheme)) {
+      // Apply immediately to the DOM root for zero-latency, in-place theme shift without page refresh
+      document.documentElement.setAttribute('data-theme', newTheme)
+      try {
+        localStorage.setItem('eks_theme', newTheme)
+      } catch {
+        // ignore
+      }
       setThemeState(newTheme)
     }
   }
