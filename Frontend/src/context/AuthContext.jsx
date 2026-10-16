@@ -30,6 +30,24 @@ export function AuthProvider({ children }) {
     setIsLoginModalOpen(true)
   }, [])
 
+  const logout = useCallback(async () => {
+    try {
+      await fetch(`${API_BASE}/api/auth/logout`, { method: 'POST' }).catch(() => {})
+    } finally {
+      setUser(null)
+      setToken(null)
+      localStorage.removeItem('eks_auth_user')
+      localStorage.removeItem('eks_auth_token')
+      if (window.google?.accounts?.id) {
+        try {
+          window.google.accounts.id.disableAutoSelect()
+        } catch {
+          // Ignore
+        }
+      }
+    }
+  }, [])
+
   const handleUnauthorized = useCallback((msg = 'Sign in with Google to upload and search your private documents.') => {
     logout()
     openLoginModal(msg)
@@ -90,24 +108,6 @@ export function AuthProvider({ children }) {
       throw err
     } finally {
       setIsAuthLoading(false)
-    }
-  }, [])
-
-  const logout = useCallback(async () => {
-    try {
-      await fetch(`${API_BASE}/api/auth/logout`, { method: 'POST' }).catch(() => {})
-    } finally {
-      setUser(null)
-      setToken(null)
-      localStorage.removeItem('eks_auth_user')
-      localStorage.removeItem('eks_auth_token')
-      if (window.google?.accounts?.id) {
-        try {
-          window.google.accounts.id.disableAutoSelect()
-        } catch {
-          // Ignore
-        }
-      }
     }
   }, [])
 
