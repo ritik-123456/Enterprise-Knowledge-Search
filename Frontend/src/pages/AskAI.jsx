@@ -22,6 +22,7 @@ import {
 } from 'lucide-react'
 import ClaudeMarkdown, { stripChunkIdCitations } from '../components/ClaudeMarkdown'
 import { useChat } from '../context/ChatContext'
+import { useAuth } from '../context/AuthContext'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
 
@@ -45,8 +46,18 @@ const STARTER_PROMPTS = [
 ]
 
 export default function AskAI() {
+  const { user, token, isAuthenticated, handleUnauthorized, openLoginModal } = useAuth()
   const { activeChat, saveChat, startNewChat } = useChat()
   const [currentChatId, setCurrentChatId] = useState(null)
+
+  // Auth header helper strictly scoped to verified bearer token (omitted when logged out, never X-User-Id)
+  const getAuthHeaders = useCallback((extra = {}) => {
+    const headers = { ...extra }
+    if (token && typeof token === 'string' && token.trim()) {
+      headers['Authorization'] = `Bearer ${token.trim()}`
+    }
+    return headers
+  }, [token])
 
   // Query & Ask States
   const [inputVal, setInputVal] = useState('')
@@ -124,10 +135,22 @@ export default function AskAI() {
   // 1. DOCUMENT REPOSITORY SYNC (GET /api/documents)
   // -------------------------------------------------------------
   const fetchDocuments = useCallback(async () => {
+    if (!token || !isAuthenticated) {
+      setDocuments([])
+      return
+    }
+
     setIsDocsLoading(true)
     setDocsError(null)
     try {
-      const res = await fetch(`${API_BASE}/api/documents`)
+      const res = await fetch(`${API_BASE}/api/documents`, {
+        headers: getAuthHeaders()
+      })
+      if (res.status === 401) {
+        handleUnauthorized?.()
+        setDocuments([])
+        return
+      }
       if (res.ok) {
         const data = await res.json()
         setDocuments(data)
@@ -139,15 +162,22 @@ export default function AskAI() {
     } finally {
       setIsDocsLoading(false)
     }
-  }, [])
+  }, [token, isAuthenticated, getAuthHeaders, handleUnauthorized])
 
+  // Re-fetch documents when auth state changes (strictly keyed to user?.id)
   useEffect(() => {
-    fetchDocuments()
+    if (user?.id && token) {
+      fetchDocuments()
+    } else {
+      setDocuments([])
+      setAnswerData(null)
+      setActiveSources({})
+    }
     return () => {
       activePollersRef.current.forEach((intervalId) => clearInterval(intervalId))
       activePollersRef.current.clear()
     }
-  }, [fetchDocuments])
+  }, [user?.id, token, fetchDocuments])
 
   // -------------------------------------------------------------
   // 2. REAL-TIME UPLOADS & POLLING STATUS (GET /api/documents/{id}/status)
@@ -176,7 +206,15 @@ export default function AskAI() {
       }
 
       try {
-        const res = await fetch(`${API_BASE}/api/documents/${docId}/status`)
+        const res = await fetch(`${API_BASE}/api/documents/${docId}/status`, {
+          headers: getAuthHeaders()
+        })
+        if (res.status === 401) {
+          clearInterval(intervalId)
+          activePollersRef.current.delete(tempUploadId)
+          handleUnauthorized?.()
+          return
+        }
         if (res.ok) {
           const data = await res.json()
           if (data.status === 'ready') {
@@ -204,9 +242,14 @@ export default function AskAI() {
     }, 1500)
 
     activePollersRef.current.set(tempUploadId, intervalId)
-  }, [fetchDocuments])
+  }, [fetchDocuments, getAuthHeaders, handleUnauthorized])
 
   const uploadFile = async (file) => {
+    if (!isAuthenticated || !token) {
+      openLoginModal("Sign in with Google to upload and search your private documents.")
+      return
+    }
+
     const tempId = `upl-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`
     const newUpload = {
       id: tempId,
@@ -225,14 +268,22 @@ export default function AskAI() {
     try {
       const res = await fetch(`${API_BASE}/api/documents/upload`, {
         method: 'POST',
+        headers: getAuthHeaders(),
         body: formData
       })
+
+      if (res.status === 401) {
+        setUploads(prev => prev.filter(u => u.id !== tempId))
+        handleUnauthorized?.()
+        return
+      }
 
       if (!res.ok) {
         let reason = `Upload failed with HTTP ${res.status}`
         if (res.status === 413) reason = 'File is too large (exceeds max size limit)'
         else if (res.status === 400) reason = 'Invalid file format or corrupted PDF header'
         else if (res.status === 422) reason = 'Unreadable or scanned image-only PDF'
+        else if (res.status === 429) reason = 'Upload rate limit exceeded. Please wait a moment.'
 
         try {
           const errData = await res.json()
@@ -277,6 +328,12 @@ export default function AskAI() {
   }
 
   const handleFileChange = (e) => {
+    if (!isAuthenticated || !token) {
+      openLoginModal("Sign in with Google to upload and search your private documents.")
+      e.target.value = ''
+      return
+    }
+
     if (e.target.files && e.target.files.length > 0) {
       const filesArray = Array.from(e.target.files)
       const pdfFiles = filesArray.filter(
@@ -313,6 +370,11 @@ export default function AskAI() {
   // -------------------------------------------------------------
   const handleDeleteDocument = async (docId, e) => {
     e.stopPropagation()
+    if (!isAuthenticated || !token) {
+      openLoginModal("Sign in with Google to manage your documents.")
+      return
+    }
+
     if (!window.confirm('Delete this document and purge all its indexed vector chunks?')) {
       return
     }
@@ -320,8 +382,14 @@ export default function AskAI() {
     setDeletingDocId(docId)
     try {
       const res = await fetch(`${API_BASE}/api/documents/${docId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: getAuthHeaders()
       })
+
+      if (res.status === 401) {
+        handleUnauthorized?.()
+        return
+      }
 
       if (res.ok) {
         setDocuments(prev => prev.filter(d => d.id !== docId))
@@ -382,6 +450,11 @@ export default function AskAI() {
     const questionText = (queryOverride || inputVal).trim()
     if (!questionText) return
 
+    if (!isAuthenticated || !token) {
+      openLoginModal("Sign in with Google to upload and search your private documents.")
+      return
+    }
+
     const userMsgId = `u-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`
     const assistantMsgId = `a-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`
     const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -420,9 +493,16 @@ export default function AskAI() {
 
       const res = await fetch(`${API_BASE}/api/documents/ask`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(payload)
       })
+
+      if (res.status === 401) {
+        handleUnauthorized?.()
+        setIsGenerating(false)
+        setThreadMessages(prev => prev.filter(m => m.id !== assistantMsgId && m.id !== userMsgId))
+        return
+      }
 
       if (res.ok) {
         const data = await res.json()
@@ -682,6 +762,36 @@ export default function AskAI() {
       <section
         className={`search-card-container ${isGlowActive ? 'trace-active' : ''}`}
         onClick={triggerAiGlow}
+        onDragOver={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+        }}
+        onDrop={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          if (!isAuthenticated || !token) {
+            openLoginModal("Sign in with Google to upload and search your private documents.")
+            return
+          }
+          if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            const filesArray = Array.from(e.dataTransfer.files)
+            const pdfFiles = filesArray.filter(
+              file => file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+            )
+            const rejectedCount = filesArray.length - pdfFiles.length
+
+            if (rejectedCount > 0) {
+              setFileError(
+                `Only PDF files are supported (${rejectedCount} non-PDF file${rejectedCount > 1 ? 's were' : ' was'} skipped).`
+              )
+              setTimeout(() => setFileError(''), 4500)
+            } else {
+              setFileError('')
+            }
+
+            pdfFiles.forEach(f => uploadFile(f))
+          }
+        }}
       >
         <input
           ref={fileInputRef}
@@ -799,6 +909,10 @@ export default function AskAI() {
               type="button"
               onClick={(e) => {
                 e.stopPropagation()
+                if (!isAuthenticated || !token) {
+                  openLoginModal("Sign in with Google to upload and search your private documents.")
+                  return
+                }
                 fileInputRef.current?.click()
               }}
               title="Upload PDF document to index"
@@ -926,7 +1040,13 @@ export default function AskAI() {
                 <button
                   type="button"
                   className="claude-ghost-btn"
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={() => {
+                    if (!isAuthenticated || !token) {
+                      openLoginModal("Sign in with Google to upload and search your private documents.")
+                      return
+                    }
+                    fileInputRef.current?.click()
+                  }}
                 >
                   <Paperclip size={13} />
                   <span>Attach Reference PDF</span>

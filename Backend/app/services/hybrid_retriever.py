@@ -44,33 +44,65 @@ def tokenize_for_bm25(text: str) -> List[str]:
 
 class CorpusBM25Index:
     """
-    Maintains an in-memory BM25 index over all indexed chunks with exact document pre-filtering.
+    Maintains in-memory BM25 indexes scoped strictly per user to ensure tenant isolation,
+    with exact document/user pre-filtering parity with Qdrant vector search.
     """
     def __init__(self):
-        self._chunks: Dict[str, DocumentChunk] = {}
-        self._corpus_tokens: List[List[str]] = []
-        self._chunk_ids: List[str] = []
-        self._bm25_model: Optional[BM25Okapi] = None
+        # Keyed per user_id: Dict[str, Dict[str, Any]]
+        # Holds chunks, chunk_ids, corpus_tokens, and bm25_model for that specific user.
+        self._user_corpora: Dict[str, Dict[str, Any]] = {}
 
-    def update_index(self, chunks: List[DocumentChunk]):
-        """Rebuilds or updates the BM25 index with new or synced chunks."""
-        self._chunks = {c.chunk_id: c for c in chunks}
-        self._chunk_ids = list(self._chunks.keys())
-        self._corpus_tokens = [
+    def update_index(self, chunks: List[DocumentChunk], user_id: str = ""):
+        """Rebuilds or updates the BM25 index for a specific user."""
+        if not user_id:
+            for c in chunks:
+                if getattr(c, "user_id", None):
+                    user_id = c.user_id
+                    break
+        if not user_id:
+            raise ValueError("user_id is required to update BM25 index")
+
+        user_chunks = {c.chunk_id: c for c in chunks}
+        chunk_ids = list(user_chunks.keys())
+        corpus_tokens = [
             tokenize_for_bm25(f"{c.document_name} {c.section_heading or ''} {c.text}")
-            for c in self._chunks.values()
+            for c in user_chunks.values()
         ]
-        if self._corpus_tokens:
+        bm25_model = None
+        if corpus_tokens:
             try:
-                self._bm25_model = BM25Okapi(self._corpus_tokens)
+                bm25_model = BM25Okapi(corpus_tokens)
             except Exception as e:
-                logger.warning(f"Failed to build BM25Okapi index: {e}. Falling back to BM25Plus.")
-                self._bm25_model = BM25Plus(self._corpus_tokens)
-        else:
-            self._bm25_model = None
+                logger.warning(f"Failed to build BM25Okapi index for user {user_id}: {e}. Falling back to BM25Plus.")
+                bm25_model = BM25Plus(corpus_tokens)
+
+        self._user_corpora[user_id] = {
+            "chunks": user_chunks,
+            "chunk_ids": chunk_ids,
+            "corpus_tokens": corpus_tokens,
+            "bm25_model": bm25_model,
+        }
+
+    def delete_document(self, document_id: str, user_id: str):
+        """Removes chunks belonging to a document for a specific user and rebuilds their BM25 index."""
+        if not user_id:
+            raise ValueError("user_id is required to delete from BM25 index")
+        if user_id in self._user_corpora:
+            remaining = [
+                c for c in self._user_corpora[user_id]["chunks"].values()
+                if c.document_id != document_id
+            ]
+            self.update_index(remaining, user_id=user_id)
+
+    def clear_user_index(self, user_id: str):
+        """Clears all BM25 index data for a specific user."""
+        if not user_id:
+            raise ValueError("user_id is required to clear BM25 index")
+        self._user_corpora.pop(user_id, None)
 
     def search(
         self,
+        user_id: str,
         query: str,
         k: int = 30,
         doc_filter: Optional[List[str]] = None,
@@ -78,30 +110,53 @@ class CorpusBM25Index:
         pipeline_version: Optional[str] = None
     ) -> List[Tuple[DocumentChunk, float]]:
         """
-        Executes BM25 search applying the EXACT same filters as vector search:
+        Executes BM25 search applying mandatory user_id scoping and the EXACT same filters as vector search:
+        - user_id isolation (mandatory)
         - document_id filter
         - doc_filter (document names)
         - pipeline_version filter ('v1' vs 'v2')
         """
-        if not self._bm25_model or not self._chunks:
-            # Sync from vector_store if local index is empty
-            if vector_store.chunks_db:
-                self.update_index([c.to_public() if hasattr(c, "to_public") else c for c in vector_store.chunks_db.values()])
-            if not self._bm25_model:
-                return []
+        if not user_id or not isinstance(user_id, str) or not user_id.strip():
+            raise ValueError("user_id is required for BM25 search")
+
+        user_data = self._user_corpora.get(user_id)
+        if not user_data or not user_data.get("bm25_model"):
+            # Sync from vector_store's user_chunks_db or Qdrant storage on cache miss
+            user_db_chunks = vector_store.user_chunks_db.get(user_id, {})
+            if not user_db_chunks:
+                vector_store.sync_chunks_from_storage(user_id=user_id)
+                user_db_chunks = vector_store.user_chunks_db.get(user_id, {})
+            if user_db_chunks:
+                self.update_index(
+                    [c.to_public() if hasattr(c, "to_public") else c for c in user_db_chunks.values()],
+                    user_id=user_id
+                )
+                user_data = self._user_corpora.get(user_id)
+
+        if not user_data or not user_data.get("bm25_model") or not user_data.get("chunks"):
+            return []
+
+        bm25_model = user_data["bm25_model"]
+        chunks_map = user_data["chunks"]
+        chunk_ids = user_data["chunk_ids"]
 
         q_tokens = tokenize_for_bm25(query)
         if not q_tokens:
             return []
 
-        scores = self._bm25_model.get_scores(q_tokens)
+        scores = bm25_model.get_scores(q_tokens)
         scored_candidates: List[Tuple[DocumentChunk, float]] = []
 
-        for cid, score in zip(self._chunk_ids, scores):
+        for cid, score in zip(chunk_ids, scores):
             if score <= 0.0:
                 continue
-            chunk = self._chunks.get(cid)
+            chunk = chunks_map.get(cid)
             if not chunk:
+                continue
+
+            # Strict tenant pre-filter
+            chunk_uid = getattr(chunk, "user_id", None)
+            if chunk_uid and chunk_uid != user_id:
                 continue
 
             # Exact filter matching parity with vector_store

@@ -140,6 +140,7 @@ class VectorStoreService:
         self.embedding_model = embedding_model or settings.EMBEDDING_MODEL
         self.dimension = dimension if dimension is not None else resolve_embedding_dimension(self.embedding_model)
         self.chunks_db: Dict[str, DocumentChunkInternal] = {}
+        self.user_chunks_db: Dict[str, Dict[str, DocumentChunkInternal]] = {}
 
         if client is not None:
             self.client = client
@@ -253,7 +254,25 @@ class VectorStoreService:
             )
 
     def _ensure_payload_indexes(self) -> None:
-        """Creates payload indexes on document_id, page_start, page_end, and pipeline_version."""
+        """Creates payload indexes on user_id, document_id, page_start, page_end, and pipeline_version."""
+        # Ensure user_id tenant keyword index exists
+        try:
+            from qdrant_client.http.models import KeywordIndexParams
+            self.client.create_payload_index(
+                collection_name=self.collection_name,
+                field_name="user_id",
+                field_schema=KeywordIndexParams(type="keyword", is_tenant=True)
+            )
+        except Exception:
+            try:
+                self.client.create_payload_index(
+                    collection_name=self.collection_name,
+                    field_name="user_id",
+                    field_schema=PayloadSchemaType.KEYWORD
+                )
+            except Exception as e:
+                logger.debug(f"Payload index creation notice for 'user_id': {e}")
+
         index_specs = [
             ("document_id", PayloadSchemaType.KEYWORD),
             ("pipeline_version", PayloadSchemaType.KEYWORD),
@@ -358,15 +377,19 @@ class VectorStoreService:
 
         return [self._generate_local_embedding(t) for t in texts]
 
-    def add_document(self, document_id: str, chunks: List[DocumentChunk]) -> None:
+    def add_document(self, document_id: str, chunks: List[DocumentChunk], user_id: str) -> None:
         """
-        Indexes document chunks into Qdrant for a given document_id.
-        Re-upload guarantees: first deletes existing points for document_id (filtered delete),
+        Indexes document chunks into Qdrant for a given document_id and user_id.
+        Re-upload guarantees: first deletes existing points for (document_id, user_id),
         then upserts new chunks in batches of EMBED_BATCH_SIZE.
-        If upsert fails partway, rolls back by deleting document_id points so no half-indexed document remains.
+        If upsert fails partway, rolls back by deleting points for (document_id, user_id) so no half-indexed document remains.
         """
-        # Step 1: Filtered delete of existing points for this document_id
-        self.delete_document(document_id)
+        if not user_id or not str(user_id).strip():
+            raise ValueError("user_id is required to index documents")
+        user_id = str(user_id).strip()
+
+        # Step 1: Filtered delete of existing points for this document_id AND user_id
+        self.delete_document(document_id, user_id=user_id)
 
         if not chunks:
             return
@@ -379,6 +402,7 @@ class VectorStoreService:
         from app.services.chunking_service import get_embedding_text
 
         for idx, chunk in enumerate(chunks):
+            chunk.user_id = user_id
             emb = getattr(chunk, "embedding", None)
             if emb is None:
                 texts_to_embed.append(get_embedding_text(chunk))
@@ -410,6 +434,7 @@ class VectorStoreService:
             payload = {
                 "chunk_id": chunk.chunk_id,
                 "document_id": document_id,
+                "user_id": user_id,
                 "source_name": source_name,
                 "document_name": getattr(chunk, "document_name", source_name),
                 "page_start": chunk.page_start,
@@ -436,6 +461,7 @@ class VectorStoreService:
             # Keep in-memory cache for backward-compatibility with endpoint tests
             internal = DocumentChunkInternal(
                 document_id=document_id,
+                user_id=user_id,
                 chunk_id=chunk.chunk_id,
                 document_name=payload["document_name"],
                 page_start=chunk.page_start,
@@ -452,6 +478,7 @@ class VectorStoreService:
                 parent_text=parent_txt
             )
             self.chunks_db[chunk.chunk_id] = internal
+            self.user_chunks_db.setdefault(user_id, {})[chunk.chunk_id] = internal
 
         # Step 3: Batch upsert with rollback on failure
         batch_size = max(1, settings.EMBED_BATCH_SIZE)
@@ -466,22 +493,30 @@ class VectorStoreService:
                 )
         except Exception as exc:
             logger.error(
-                f"Batch upsert failed for document '{document_id}': {exc}. "
+                f"Batch upsert failed for document '{document_id}' (user '{user_id}'): {exc}. "
                 f"Rolling back partially indexed points."
             )
             try:
-                self.delete_document(document_id)
+                self.delete_document(document_id, user_id=user_id)
             except Exception as rollback_err:
                 logger.error(f"Rollback failed for document '{document_id}': {rollback_err}")
             raise exc
 
-    def delete_document(self, document_id: str) -> None:
-        """Deletes all points in Qdrant associated with document_id."""
+    def delete_document(self, document_id: str, user_id: str) -> None:
+        """Deletes all points in Qdrant associated with document_id AND user_id."""
+        if not user_id or not str(user_id).strip():
+            raise ValueError("user_id is required to delete documents")
+        user_id = str(user_id).strip()
+
         del_filter = Filter(
             must=[
                 FieldCondition(
                     key="document_id",
                     match=MatchValue(value=document_id)
+                ),
+                FieldCondition(
+                    key="user_id",
+                    match=MatchValue(value=user_id)
                 )
             ]
         )
@@ -493,47 +528,89 @@ class VectorStoreService:
                 )
             )
         except Exception as e:
-            logger.error(f"Failed deleting points for document '{document_id}': {e}")
+            logger.error(f"Failed deleting points for document '{document_id}' (user '{user_id}'): {e}")
             raise VectorStoreConnectionError(f"Failed to delete document '{document_id}': {e}") from e
 
         # Clear matching entries from chunks_db
-        to_del = [k for k, v in self.chunks_db.items() if getattr(v, "document_id", None) == document_id]
+        to_del = [
+            k for k, v in self.chunks_db.items()
+            if getattr(v, "document_id", None) == document_id and getattr(v, "user_id", None) == user_id
+        ]
         for cid in to_del:
             self.chunks_db.pop(cid, None)
+        if user_id in self.user_chunks_db:
+            u_to_del = [
+                k for k, v in self.user_chunks_db[user_id].items()
+                if getattr(v, "document_id", None) == document_id
+            ]
+            for cid in u_to_del:
+                self.user_chunks_db[user_id].pop(cid, None)
 
-    def list_documents(self) -> List[str]:
-        """Lists distinct document_ids present in the collection."""
+    def clear_user_documents(self, user_id: str) -> None:
+        """Deletes all points in Qdrant associated with user_id."""
+        if not user_id or not str(user_id).strip():
+            raise ValueError("user_id is required to clear user documents")
+        user_id = str(user_id).strip()
+        del_filter = Filter(
+            must=[
+                FieldCondition(
+                    key="user_id",
+                    match=MatchValue(value=user_id)
+                )
+            ]
+        )
         try:
-            res = self._retry_call(
-                lambda: self.client.facet(
+            self._retry_call(
+                lambda: self.client.delete(
                     collection_name=self.collection_name,
-                    key="document_id"
+                    points_selector=del_filter
                 )
             )
-            return sorted([str(h.value) for h in res.hits if h.value is not None])
-        except Exception:
-            # Fallback scroll
-            doc_ids = set()
-            offset = None
-            while True:
-                try:
-                    points, offset = self._retry_call(
-                        lambda off=offset: self.client.scroll(
-                            collection_name=self.collection_name,
-                            offset=off,
-                            limit=100,
-                            with_payload=["document_id"]
-                        )
-                    )
-                except Exception as e:
-                    raise VectorStoreConnectionError(f"Failed to list documents: {e}") from e
+        except Exception as e:
+            logger.error(f"Failed clearing points for user '{user_id}': {e}")
+            raise VectorStoreConnectionError(f"Failed to clear points for user '{user_id}': {e}") from e
 
-                for p in points:
-                    if p.payload and "document_id" in p.payload:
-                        doc_ids.add(str(p.payload["document_id"]))
-                if offset is None:
-                    break
-            return sorted(list(doc_ids))
+        # Clear matching entries from chunks_db
+        to_del = [k for k, v in self.chunks_db.items() if getattr(v, "user_id", None) == user_id]
+        for cid in to_del:
+            self.chunks_db.pop(cid, None)
+        self.user_chunks_db.pop(user_id, None)
+
+    def list_documents(self, user_id: str) -> List[str]:
+        """Lists distinct document_ids present in the collection for a specific user_id."""
+        if not user_id or not str(user_id).strip():
+            raise ValueError("user_id is required to list documents")
+        user_id = str(user_id).strip()
+        user_filter = Filter(
+            must=[
+                FieldCondition(
+                    key="user_id",
+                    match=MatchValue(value=user_id)
+                )
+            ]
+        )
+        doc_ids = set()
+        offset = None
+        while True:
+            try:
+                points, offset = self._retry_call(
+                    lambda off=offset: self.client.scroll(
+                        collection_name=self.collection_name,
+                        scroll_filter=user_filter,
+                        offset=off,
+                        limit=100,
+                        with_payload=["document_id", "user_id"]
+                    )
+                )
+            except Exception as e:
+                raise VectorStoreConnectionError(f"Failed to list documents for user '{user_id}': {e}") from e
+
+            for p in points:
+                if p.payload and "document_id" in p.payload:
+                    doc_ids.add(str(p.payload["document_id"]))
+            if offset is None:
+                break
+        return sorted(list(doc_ids))
 
     def count(self) -> int:
         """Returns total count of points stored in the collection."""
@@ -548,14 +625,25 @@ class VectorStoreService:
         except Exception as e:
             raise VectorStoreConnectionError(f"Failed to count points in collection: {e}") from e
 
-    def sync_chunks_from_storage(self) -> None:
-        """Loads chunks from Qdrant Cloud into chunks_db in-memory cache if empty."""
+    def sync_chunks_from_storage(self, user_id: Optional[str] = None) -> None:
+        """Loads chunks from Qdrant Cloud into chunks_db in-memory cache, optionally filtered by user_id."""
         try:
+            scroll_filter = None
+            if user_id:
+                scroll_filter = Filter(
+                    must=[
+                        FieldCondition(
+                            key="user_id",
+                            match=MatchValue(value=str(user_id).strip())
+                        )
+                    ]
+                )
             offset = None
             while True:
                 points, offset = self._retry_call(
                     lambda off=offset: self.client.scroll(
                         collection_name=self.collection_name,
+                        scroll_filter=scroll_filter,
                         offset=off,
                         limit=100,
                         with_payload=True,
@@ -571,6 +659,9 @@ class VectorStoreService:
                             payload["source_name"] = payload["document_name"]
                         chunk = DocumentChunk(**payload)
                         self.chunks_db[chunk.chunk_id] = chunk
+                        uid = getattr(chunk, "user_id", None) or user_id
+                        if uid:
+                            self.user_chunks_db.setdefault(str(uid), {})[chunk.chunk_id] = chunk
                 if offset is None:
                     break
         except Exception as e:
@@ -578,6 +669,7 @@ class VectorStoreService:
 
     def search(
         self,
+        user_id: str,
         query_embedding: Optional[Union[List[float], str]] = None,
         k: Optional[int] = None,
         document_id: Optional[str] = None,
@@ -590,13 +682,18 @@ class VectorStoreService:
         pipeline_version: Optional[str] = None,
     ) -> List[Tuple[DocumentChunk, float]]:
         """
-        Searches collection with query vector or text query.
+        Searches collection with query vector or text query strictly scoped to user_id.
+        - Enforces user_id requirement (never queries without user_id)
         - Applies limit=k (defaulting to RETRIEVE_K)
         - Optional document_id filter
         - Drops results with score below MIN_SIMILARITY
         - Returns public DocumentChunk objects plus score (embeddings strictly stripped).
         - Empty collection returns [] without error.
         """
+        if not user_id or not str(user_id).strip():
+            raise ValueError("user_id is required for vector search")
+        user_id = str(user_id).strip()
+
         # Resolve query vector
         if query_embedding is not None:
             if isinstance(query_embedding, list):
@@ -618,7 +715,13 @@ class VectorStoreService:
         cutoff = min_similarity if min_similarity is not None else settings.MIN_SIMILARITY
         score_thresh = cutoff if (cutoff is not None and cutoff > 0.0) else None
 
-        must_conditions = []
+        # Mandatory user_id filter: every query MUST be constrained by user_id
+        must_conditions = [
+            FieldCondition(
+                key="user_id",
+                match=MatchValue(value=user_id)
+            )
+        ]
         must_not_conditions = []
         if document_id:
             must_conditions.append(
@@ -694,8 +797,12 @@ class VectorStoreService:
                 raise VectorStoreConnectionError(f"Failed to query Qdrant: {e}") from e
 
         # Fallback to in-memory cache if Qdrant returned nothing but chunks_db has items (e.g. manual test mock)
-        if not results and self.chunks_db and self.count() == 0:
-            for internal_chunk in self.chunks_db.values():
+        if not results and (self.user_chunks_db.get(user_id) or self.chunks_db) and self.count() == 0:
+            user_cached = self.user_chunks_db.get(user_id, {})
+            candidate_chunks = user_cached.values() if user_cached else [
+                c for c in self.chunks_db.values() if getattr(c, "user_id", None) == user_id
+            ]
+            for internal_chunk in candidate_chunks:
                 if document_id and internal_chunk.document_id != document_id:
                     continue
                 if doc_filter and internal_chunk.document_name not in doc_filter:
@@ -704,7 +811,7 @@ class VectorStoreService:
                     continue
                 if pipeline_version == "v2" and getattr(internal_chunk, "pipeline_version", "v2") == "v1":
                     continue
-                sim = self._cosine_similarity(query_vec, internal_chunk.embedding or [])
+                sim = self._cosine_similarity(query_vec, getattr(internal_chunk, "embedding", None) or [])
                 if sim >= cutoff:
                     chunk_obj = internal_chunk.to_public() if hasattr(internal_chunk, "to_public") else internal_chunk
                     results.append((chunk_obj, sim))
@@ -730,7 +837,7 @@ class VectorStoreService:
 
         return max(0.0, min(1.0, dot_product / (norm_a * norm_b)))
 
-    def add_chunks(self, chunks: List[DocumentChunk]) -> None:
+    def add_chunks(self, chunks: List[DocumentChunk], user_id: Optional[str] = None) -> None:
         """Indexes arbitrary chunks, grouping them by document_id."""
         if not chunks:
             return
@@ -738,11 +845,13 @@ class VectorStoreService:
         for c in chunks:
             grouped.setdefault(c.document_id, []).append(c)
         for doc_id, doc_chunks in grouped.items():
-            self.add_document(doc_id, doc_chunks)
+            uid = user_id or getattr(doc_chunks[0], "user_id", None) or "default_user"
+            self.add_document(doc_id, doc_chunks, user_id=uid)
 
     def clear(self) -> None:
         """Clears all points and in-memory cache."""
         self.chunks_db.clear()
+        self.user_chunks_db.clear()
         try:
             self.client.delete_collection(collection_name=self.collection_name)
         except Exception:

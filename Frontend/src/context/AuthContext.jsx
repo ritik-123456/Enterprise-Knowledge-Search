@@ -22,7 +22,18 @@ export function AuthProvider({ children }) {
   const [isAuthLoading, setIsAuthLoading] = useState(false)
   const [authError, setAuthError] = useState(null)
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false)
+  const [loginPromptMessage, setLoginPromptMessage] = useState(null)
   const [configuredClientId, setConfiguredClientId] = useState(GOOGLE_CLIENT_ID)
+
+  const openLoginModal = useCallback((msg = null) => {
+    setLoginPromptMessage(msg)
+    setIsLoginModalOpen(true)
+  }, [])
+
+  const handleUnauthorized = useCallback((msg = 'Sign in with Google to upload and search your private documents.') => {
+    logout()
+    openLoginModal(msg)
+  }, [logout, openLoginModal])
 
   // Fetch public config from backend if env not injected
   useEffect(() => {
@@ -153,6 +164,9 @@ export function AuthProvider({ children }) {
     renderGoogleButton,
     isLoginModalOpen,
     setIsLoginModalOpen,
+    loginPromptMessage,
+    openLoginModal,
+    handleUnauthorized,
     clientId: configuredClientId
   }
 

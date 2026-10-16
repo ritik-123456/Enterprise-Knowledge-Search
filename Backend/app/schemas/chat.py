@@ -12,7 +12,7 @@ class ChatMessage(BaseModel):
 
 class SaveChatRequest(BaseModel):
     id: Optional[str] = None
-    user_id: str = Field(..., description="Google Subject/User ID")
+    user_id: Optional[str] = Field(default=None, description="Internal storage user ID (derived on server)")
     user_email: Optional[str] = None
     title: str = Field(default="Conversation")
     messages: List[Dict[str, Any]] = Field(default_factory=list)

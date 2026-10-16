@@ -5,25 +5,38 @@ const ChatContext = createContext(null)
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
 
 export function ChatProvider({ children }) {
-  const { user, isAuthenticated } = useAuth()
+  const { user, token, isAuthenticated, handleUnauthorized } = useAuth()
   const [chats, setChats] = useState([])
   const [isLoadingChats, setIsLoadingChats] = useState(false)
   const [activeChat, setActiveChat] = useState(null)
   const [searchFilter, setSearchFilter] = useState('')
 
+  const getAuthHeaders = useCallback((extra = {}) => {
+    const headers = { ...extra }
+    if (token && typeof token === 'string' && token.trim()) {
+      headers['Authorization'] = `Bearer ${token.trim()}`
+    }
+    return headers
+  }, [token])
+
   const fetchUserChats = useCallback(async (query = '') => {
-    if (!isAuthenticated || !user) {
+    if (!isAuthenticated || !token || !user) {
       setChats([])
       return
     }
     setIsLoadingChats(true)
     try {
       const params = new URLSearchParams()
-      if (user.id) params.append('user_id', user.id)
-      if (user.email) params.append('user_email', user.email)
       if (query) params.append('search', query)
 
-      const res = await fetch(`${API_BASE}/api/chats?${params.toString()}`)
+      const res = await fetch(`${API_BASE}/api/chats?${params.toString()}`, {
+        headers: getAuthHeaders()
+      })
+      if (res.status === 401) {
+        handleUnauthorized?.()
+        setChats([])
+        return
+      }
       if (res.ok) {
         const data = await res.json()
         setChats(data)
@@ -33,30 +46,33 @@ export function ChatProvider({ children }) {
     } finally {
       setIsLoadingChats(false)
     }
-  }, [isAuthenticated, user])
+  }, [isAuthenticated, token, user, getAuthHeaders, handleUnauthorized])
 
   useEffect(() => {
-    if (isAuthenticated && user) {
+    if (isAuthenticated && token && user?.id) {
       fetchUserChats()
     } else {
       setChats([])
       setActiveChat(null)
     }
-  }, [isAuthenticated, user, fetchUserChats])
+  }, [isAuthenticated, token, user?.id, fetchUserChats])
 
   const saveChat = useCallback(async (chatPayload) => {
-    if (!isAuthenticated || !user) return null
+    if (!isAuthenticated || !token || !user) return null
     try {
       const payload = {
         ...chatPayload,
-        user_id: user.id || user.email,
         user_email: user.email
       }
       const res = await fetch(`${API_BASE}/api/chats`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(payload)
       })
+      if (res.status === 401) {
+        handleUnauthorized?.()
+        return null
+      }
       if (res.ok) {
         const saved = await res.json()
         setActiveChat(saved)
@@ -67,11 +83,18 @@ export function ChatProvider({ children }) {
       console.warn('Error saving chat session:', err)
     }
     return null
-  }, [isAuthenticated, user, fetchUserChats])
+  }, [isAuthenticated, token, user, getAuthHeaders, fetchUserChats, handleUnauthorized])
 
   const loadChat = useCallback(async (chatId) => {
+    if (!isAuthenticated || !token) return null
     try {
-      const res = await fetch(`${API_BASE}/api/chats/${chatId}`)
+      const res = await fetch(`${API_BASE}/api/chats/${chatId}`, {
+        headers: getAuthHeaders()
+      })
+      if (res.status === 401) {
+        handleUnauthorized?.()
+        return null
+      }
       if (res.ok) {
         const data = await res.json()
         setActiveChat(data)
@@ -81,13 +104,19 @@ export function ChatProvider({ children }) {
       console.warn('Error loading chat transcript:', err)
     }
     return null
-  }, [])
+  }, [isAuthenticated, token, getAuthHeaders, handleUnauthorized])
 
   const deleteChat = useCallback(async (chatId) => {
+    if (!isAuthenticated || !token) return false
     try {
       const res = await fetch(`${API_BASE}/api/chats/${chatId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: getAuthHeaders()
       })
+      if (res.status === 401) {
+        handleUnauthorized?.()
+        return false
+      }
       if (res.ok) {
         setChats(prev => prev.filter(c => c.id !== chatId))
         if (activeChat?.id === chatId) {
@@ -99,7 +128,7 @@ export function ChatProvider({ children }) {
       console.warn('Error deleting chat session:', err)
     }
     return false
-  }, [activeChat])
+  }, [isAuthenticated, token, activeChat, getAuthHeaders, handleUnauthorized])
 
   const startNewChat = useCallback(() => {
     setActiveChat(null)
@@ -112,13 +141,13 @@ export function ChatProvider({ children }) {
         isLoadingChats,
         activeChat,
         setActiveChat,
+        searchFilter,
+        setSearchFilter,
         fetchUserChats,
         saveChat,
         loadChat,
         deleteChat,
-        startNewChat,
-        searchFilter,
-        setSearchFilter
+        startNewChat
       }}
     >
       {children}
@@ -127,9 +156,9 @@ export function ChatProvider({ children }) {
 }
 
 export function useChat() {
-  const ctx = useContext(ChatContext)
-  if (!ctx) {
+  const context = useContext(ChatContext)
+  if (!context) {
     throw new Error('useChat must be used within a ChatProvider')
   }
-  return ctx
+  return context
 }

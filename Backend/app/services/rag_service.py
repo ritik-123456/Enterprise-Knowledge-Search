@@ -389,6 +389,7 @@ class RAGService:
     def _answer_query_legacy(
         self,
         question: str,
+        user_id: str,
         doc_filter: Optional[List[str]] = None,
         document_id: Optional[str] = None
     ) -> AskAIResponse:
@@ -397,6 +398,7 @@ class RAGService:
         # Step 1: Broad retrieval: fetch RETRIEVE_K candidates from vector store
         candidates = vector_store.search(
             query=question,
+            user_id=user_id,
             k=settings.RETRIEVE_K,
             doc_filter=doc_filter,
             document_id=document_id,
@@ -642,6 +644,7 @@ class RAGService:
     def _answer_query_v2(
         self,
         question: str,
+        user_id: str,
         doc_filter: Optional[List[str]] = None,
         document_id: Optional[str] = None
     ) -> AskAIResponse:
@@ -684,7 +687,7 @@ class RAGService:
             # Stage 1: Query Analysis & Decomposition
             t_decomp_0 = time.time()
             if getattr(settings, "ENABLE_QUERY_DECOMPOSITION", True):
-                analysis = query_decomposition_service.analyze_query(question, client=client)
+                analysis = query_decomposition_service.analyze_query(question, client=client, user_id=user_id)
                 sub_qs = analysis.get("sub_questions", [question])
                 q_type = analysis.get("type", "simple")
                 is_multi_doc = analysis.get("is_multi_doc", False)
@@ -703,6 +706,7 @@ class RAGService:
                 # 1. Qdrant dense vector search
                 dense_cands = vector_store.search(
                     query=sub_q,
+                    user_id=user_id,
                     k=settings.RETRIEVE_K,
                     doc_filter=doc_filter,
                     document_id=document_id,
@@ -713,6 +717,7 @@ class RAGService:
                 # 2. Corpus-wide BM25 search with identical pre-filtering
                 if getattr(settings, "ENABLE_HYBRID_BM25", True):
                     bm25_cands = corpus_bm25_index.search(
+                        user_id=user_id,
                         query=sub_q,
                         k=settings.RETRIEVE_K,
                         doc_filter=doc_filter,
@@ -955,6 +960,7 @@ class RAGService:
     def answer_query(
         self,
         question: str,
+        user_id: str,
         doc_filter: Optional[List[str]] = None,
         document_id: Optional[str] = None,
         pipeline_version: Optional[str] = None
@@ -962,11 +968,15 @@ class RAGService:
         """
         Public answer endpoint routing between legacy baseline ('v1')
         and improved pipeline ('v2') according to configuration or request parameter.
+        Enforces tenant isolation by requiring verified caller user_id.
         """
+        if not user_id or not isinstance(user_id, str) or not user_id.strip():
+            raise ValueError("user_id is required to answer query")
+
         active_ver = pipeline_version or getattr(settings, "PIPELINE_VERSION", "v2")
         if active_ver == "v1":
-            return self._answer_query_legacy(question, doc_filter, document_id)
-        return self._answer_query_v2(question, doc_filter, document_id)
+            return self._answer_query_legacy(question, user_id=user_id, doc_filter=doc_filter, document_id=document_id)
+        return self._answer_query_v2(question, user_id=user_id, doc_filter=doc_filter, document_id=document_id)
 
 
 rag_service = RAGService()

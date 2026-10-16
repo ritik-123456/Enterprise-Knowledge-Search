@@ -8,6 +8,7 @@ export default function LoginModal() {
   const {
     isLoginModalOpen,
     setIsLoginModalOpen,
+    loginPromptMessage,
     renderGoogleButton,
     isAuthLoading,
     authError,
@@ -53,7 +54,7 @@ export default function LoginModal() {
           <MarvoLogo size={48} className="login-brand-logo" />
           <h2 className="login-modal-title">Sign In to MARVO</h2>
           <p className="login-modal-subtitle">
-            Enterprise Knowledge Search & Governance
+            {loginPromptMessage || 'Enterprise Knowledge Search & Governance'}
           </p>
         </div>
 

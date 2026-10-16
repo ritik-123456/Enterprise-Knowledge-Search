@@ -114,25 +114,23 @@ class ChatHistoryService:
 
     def get_user_chats(
         self,
-        user_id: Optional[str] = None,
+        user_id: str,
         user_email: Optional[str] = None,
         search_query: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """
         Retrieves user chats ordered from most recent to oldest.
-        Filters by search query matching titles or message contents.
+        Filters strictly by the verified user_id.
         """
+        if not user_id or not isinstance(user_id, str) or not user_id.strip():
+            return []
+
         results = []
 
         # Try fetching from Supabase first
         if self.is_supabase_connected:
             try:
-                query = self._supabase_client.table("user_chats").select("*").order("updated_at", desc=True)
-                if user_id:
-                    query = query.eq("user_id", str(user_id))
-                elif user_email:
-                    query = query.eq("user_email", str(user_email))
-
+                query = self._supabase_client.table("user_chats").select("*").eq("user_id", str(user_id)).order("updated_at", desc=True)
                 resp = query.execute()
                 if resp.data is not None:
                     results = resp.data
@@ -143,12 +141,7 @@ class ChatHistoryService:
         # If Supabase returned nothing or errored, use local store
         if not results:
             local_chats = self._read_local_store()
-            if user_id:
-                results = [c for c in local_chats if str(c.get("user_id")) == str(user_id)]
-            elif user_email:
-                results = [c for c in local_chats if c.get("user_email") == user_email]
-            else:
-                results = local_chats
+            results = [c for c in local_chats if str(c.get("user_id")) == str(user_id)]
 
         # Sort by updated_at descending
         results.sort(key=lambda x: x.get("updated_at", ""), reverse=True)
@@ -177,24 +170,36 @@ class ChatHistoryService:
 
         return results
 
-    def get_chat_by_id(self, chat_id: str) -> Optional[Dict[str, Any]]:
+    def get_chat_by_id(self, chat_id: str, user_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """
         Retrieves full chat conversation thread by ID.
+        If user_id is provided, enforces that the conversation belongs to that user.
         """
+        chat = None
         if self.is_supabase_connected:
             try:
-                resp = self._supabase_client.table("user_chats").select("*").eq("id", chat_id).execute()
+                q = self._supabase_client.table("user_chats").select("*").eq("id", chat_id)
+                if user_id:
+                    q = q.eq("user_id", str(user_id))
+                resp = q.execute()
                 if resp.data and len(resp.data) > 0:
-                    return resp.data[0]
+                    chat = resp.data[0]
             except Exception as e:
                 logger.warning(f"Supabase fetch by ID failed: {e}")
 
-        local_chats = self._read_local_store()
-        return next((c for c in local_chats if c.get("id") == chat_id), None)
+        if not chat:
+            local_chats = self._read_local_store()
+            chat = next((c for c in local_chats if c.get("id") == chat_id), None)
+
+        if chat and user_id:
+            if str(chat.get("user_id")) != str(user_id):
+                return None
+
+        return chat
 
     def delete_chat(self, chat_id: str, user_id: Optional[str] = None) -> bool:
         """
-        Deletes a chat conversation.
+        Deletes a chat conversation ensuring caller ownership.
         """
         success = False
         if self.is_supabase_connected:
@@ -208,7 +213,10 @@ class ChatHistoryService:
                 logger.warning(f"Supabase delete failed: {e}")
 
         local_chats = self._read_local_store()
-        filtered = [c for c in local_chats if c.get("id") != chat_id]
+        filtered = [
+            c for c in local_chats
+            if not (c.get("id") == chat_id and (not user_id or str(c.get("user_id")) == str(user_id)))
+        ]
         if len(filtered) != len(local_chats):
             self._write_local_store(filtered)
             success = True

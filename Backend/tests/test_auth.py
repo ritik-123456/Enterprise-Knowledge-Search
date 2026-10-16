@@ -56,8 +56,8 @@ def test_google_auth_successful_verification():
         assert data["success"] is True
         assert data["user"]["email"] == "developer@acme.com"
         assert data["user"]["name"] == "Jane Doe"
-        assert data["user"]["picture"] == "https://lh3.googleusercontent.com/a/sample_avatar"
-        assert "eks_sess_" in data["token"]
+        assert bool(data["token"])
+        assert len(data["token"].split(".")) == 3  # Valid JWT format (header.payload.signature)
 
 
 def test_logout_endpoint():

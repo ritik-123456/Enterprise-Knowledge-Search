@@ -87,6 +87,7 @@ class DocumentChunk(BaseModel):
     Uses @computed_field for 'page_number' so it serializes in JSON.
     """
     document_id: str = Field(..., description="Content hash or ID of the parent document")
+    user_id: str = Field(default="", description="Owner user ID for strict multi-tenant isolation")
     chunk_id: str = Field(..., description="Unique chunk identifier")
     document_name: str = Field(..., description="Name of the source document")
     page_start: int = Field(..., description="Starting page number (1-indexed)")
@@ -153,6 +154,7 @@ class PDFUploadResponse(BaseModel):
 class DocumentSummary(BaseModel):
     """Document summary item returned by GET /api/documents."""
     id: str = Field(..., description="Document content hash identifier")
+    user_id: str = Field(default="", description="Owner user ID for strict multi-tenant isolation")
     name: str = Field(..., description="Document original file name")
     page_count: int = Field(default=0, description="Total pages extracted")
     chunk_count: int = Field(default=0, description="Total chunks indexed")

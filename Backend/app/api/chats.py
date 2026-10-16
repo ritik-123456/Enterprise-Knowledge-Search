@@ -1,7 +1,8 @@
 import logging
 from typing import List, Optional
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
+from app.core.auth_dependency import get_current_user_id
 from app.schemas.chat import (
     SaveChatRequest,
     ChatSummary,
@@ -16,16 +17,14 @@ router = APIRouter(prefix="/chats", tags=["Chat History & Search"])
 
 @router.get("", response_model=List[ChatSummary])
 def list_chats(
-    user_id: Optional[str] = Query(None, description="Filter by user ID"),
-    user_email: Optional[str] = Query(None, description="Filter by user email"),
-    search: Optional[str] = Query(None, description="Search query across titles and messages")
+    search: Optional[str] = Query(None, description="Search query across titles and messages"),
+    current_user_id: str = Depends(get_current_user_id)
 ):
     """
-    Search and retrieve chat sessions for the authenticated user.
+    Search and retrieve chat sessions strictly for the authenticated user.
     """
     chats = chat_service.get_user_chats(
-        user_id=user_id,
-        user_email=user_email,
+        user_id=current_user_id,
         search_query=search
     )
 
@@ -60,11 +59,15 @@ def list_chats(
 
 
 @router.get("/{chat_id}", response_model=ChatDetailResponse)
-def get_chat(chat_id: str):
+def get_chat(
+    chat_id: str,
+    current_user_id: str = Depends(get_current_user_id)
+):
     """
     Fetch full chat transcript by ID.
+    Enforces that caller owns the requested chat (returns 404 if not found or unowned).
     """
-    chat = chat_service.get_chat_by_id(chat_id)
+    chat = chat_service.get_chat_by_id(chat_id, user_id=current_user_id)
     if not chat:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -83,11 +86,17 @@ def get_chat(chat_id: str):
 
 
 @router.post("", response_model=ChatDetailResponse)
-def save_chat(payload: SaveChatRequest):
+def save_chat(
+    payload: SaveChatRequest,
+    current_user_id: str = Depends(get_current_user_id)
+):
     """
-    Save or update a conversation session in Supabase cloud storage (with local caching).
+    Save or update a conversation session.
+    Forces ownership to the server-verified current_user_id.
     """
-    record = chat_service.save_chat(payload.model_dump())
+    chat_data = payload.model_dump()
+    chat_data["user_id"] = current_user_id
+    record = chat_service.save_chat(chat_data)
     return ChatDetailResponse(
         id=record.get("id"),
         user_id=record.get("user_id", ""),
@@ -101,11 +110,15 @@ def save_chat(payload: SaveChatRequest):
 
 
 @router.delete("/{chat_id}")
-def delete_chat(chat_id: str, user_id: Optional[str] = Query(None)):
+def delete_chat(
+    chat_id: str,
+    current_user_id: str = Depends(get_current_user_id)
+):
     """
     Delete a specific chat conversation.
+    Returns 404 if conversation does not exist or caller is not the owner.
     """
-    success = chat_service.delete_chat(chat_id, user_id=user_id)
+    success = chat_service.delete_chat(chat_id, user_id=current_user_id)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -115,9 +128,11 @@ def delete_chat(chat_id: str, user_id: Optional[str] = Query(None)):
 
 
 @router.post("/clear")
-def clear_chats(user_id: str = Query(..., description="User ID to clear chats for")):
+def clear_chats(
+    current_user_id: str = Depends(get_current_user_id)
+):
     """
-    Clear all saved chats for a user.
+    Clear all saved chats for the authenticated caller.
     """
-    chat_service.clear_user_chats(user_id)
+    chat_service.clear_user_chats(current_user_id)
     return {"success": True, "message": "All conversations cleared."}

@@ -1,4 +1,5 @@
 import os
+import sys
 from typing import Optional
 from pydantic import Field, SecretStr, AliasChoices, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -48,6 +49,11 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: Optional[SecretStr] = Field(
         default=None,
         description="Google OAuth 2.0 Client Secret (strictly confidential)"
+    )
+    AUTH_SECRET_KEY: Optional[SecretStr] = Field(
+        default=None,
+        validation_alias=AliasChoices("AUTH_SECRET_KEY", "JWT_SECRET", "SECRET_KEY"),
+        description="Confidential secret key used to sign and verify JWT authentication tokens"
     )
 
     # Supabase Cloud Database Credentials (Strictly confidential)
@@ -253,6 +259,51 @@ class Settings(BaseSettings):
             or os.getenv("SUPABASE_SERVICE_KEY")
             or os.getenv("SUPABASE_API_KEY")
         )
+
+    @property
+    def jwt_secret(self) -> str:
+        """
+        Returns secret key used for signing session tokens.
+        NO default or fallback is permitted outside test mode.
+        """
+        if self.AUTH_SECRET_KEY:
+            val = self.AUTH_SECRET_KEY.get_secret_value().strip()
+            if val:
+                return val
+        env_secret = os.getenv("AUTH_SECRET_KEY") or os.getenv("JWT_SECRET") or os.getenv("SECRET_KEY")
+        if env_secret and env_secret.strip():
+            return env_secret.strip()
+        is_test_mode = (
+            sys.modules.get("pytest") is not None
+            or os.getenv("TESTING") == "1"
+            or os.getenv("PYTEST_CURRENT_TEST") is not None
+        )
+        if is_test_mode:
+            return "test_environment_secret_key_minimum_32_characters_long_for_pytest"
+        raise ValueError("AUTH_SECRET_KEY is unset and no fallback is permitted outside test mode.")
+
+    @model_validator(mode="after")
+    def validate_auth_settings(self):
+        """
+        Validate AUTH_SECRET_KEY outside test mode.
+        Fails fast at startup if unset or shorter than 32 characters.
+        """
+        is_test_mode = (
+            sys.modules.get("pytest") is not None
+            or os.getenv("TESTING") == "1"
+            or os.getenv("PYTEST_CURRENT_TEST") is not None
+        )
+        if not is_test_mode:
+            if not self.AUTH_SECRET_KEY or not self.AUTH_SECRET_KEY.get_secret_value().strip():
+                raise ValueError(
+                    "AUTH_SECRET_KEY is mandatory outside test mode. Set AUTH_SECRET_KEY in your environment or .env."
+                )
+            raw_secret = self.AUTH_SECRET_KEY.get_secret_value().strip()
+            if len(raw_secret) < 32:
+                raise ValueError(
+                    f"AUTH_SECRET_KEY must be at least 32 characters long (got {len(raw_secret)} characters)."
+                )
+        return self
 
     @model_validator(mode="after")
     def validate_rag_settings(self):

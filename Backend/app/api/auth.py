@@ -6,6 +6,7 @@ import httpx
 from fastapi import APIRouter, HTTPException, status
 
 from app.core.config import settings
+from app.core.auth_dependency import create_access_token
 from app.schemas.auth import (
     GoogleAuthRequest,
     UserProfile,
@@ -94,7 +95,16 @@ async def authenticate_with_google(payload: GoogleAuthRequest):
             detail="Invalid Google token issuer."
         )
 
-    # 3. Extract verified user profile
+    # 3. Validate expiration (exp)
+    token_exp = int(token_info.get("exp", 0))
+    if token_exp and token_exp < int(time.time()):
+        logger.warning(f"Google token is expired: exp={token_exp}, now={int(time.time())}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Google ID token has expired."
+        )
+
+    # 4. Extract verified user profile
     sub = token_info.get("sub")
     email = token_info.get("email")
     if not sub or not email:
@@ -125,10 +135,14 @@ async def authenticate_with_google(payload: GoogleAuthRequest):
         department=department
     )
 
-    # 4. Generate persistent session token
-    secret_bytes = settings.active_api_key.encode("utf-8") if settings.active_api_key else b"eks_auth_secret_seed"
-    token_material = f"{sub}:{email}:{time.time()}".encode("utf-8")
-    session_token = f"eks_sess_{hashlib.sha256(token_material + secret_bytes).hexdigest()[:32]}"
+    # 4. Generate persistent signed session token
+    session_token = create_access_token(
+        user_id=str(sub),
+        email=email,
+        name=name,
+        role=role,
+        department=department
+    )
 
     logger.info(f"User successfully authenticated with Google OAuth: email='{email}', id='{sub}'")
 

@@ -63,7 +63,7 @@ class QueryDecompositionService:
             logger.warning(f"Decomposition LLM call notice: {e}")
         return None
 
-    def analyze_query(self, question: str, client: Optional[Any] = None) -> Dict[str, Any]:
+    def analyze_query(self, question: str, client: Optional[Any] = None, user_id: Optional[str] = None) -> Dict[str, Any]:
         """
         Classifies and decomposes the query.
         Falls back safely to simple path if JSON parsing fails or LLM is unavailable.
@@ -79,10 +79,11 @@ class QueryDecompositionService:
         if not getattr(settings, "ENABLE_QUERY_DECOMPOSITION", True):
             return fallback
 
-        # Check local cache first to save tokens
+        # Check local cache first to save tokens (keyed by user_id to prevent cross-tenant leaks)
         q_clean = question.strip().lower()
-        if q_clean in self._llm_cache:
-            return self._llm_cache[q_clean]
+        cache_key = f"{user_id}:{q_clean}" if user_id else q_clean
+        if cache_key in self._llm_cache:
+            return self._llm_cache[cache_key]
 
         if not client:
             try:
@@ -127,7 +128,7 @@ class QueryDecompositionService:
                 "sub_questions": [str(s).strip() for s in sub_qs if str(s).strip()][:5],
                 "is_multi_doc": bool(data.get("is_multi_doc", False))
             }
-            self._llm_cache[q_clean] = result
+            self._llm_cache[cache_key] = result
             return result
         except Exception as parse_err:
             logger.warning(f"JSON-parse fallback activated for query '{question}': {parse_err}. Raw output was: {raw_output[:100]}")
