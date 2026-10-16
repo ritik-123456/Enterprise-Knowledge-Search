@@ -8,6 +8,7 @@ import {
   RefreshCw,
   Sparkles,
   ArrowRight,
+  ArrowLeft,
   Layers,
   X,
   Copy,
@@ -39,6 +40,7 @@ export default function ChatHistory({ onOpenChat, onNewChat }) {
   const [copiedMsgId, setCopiedMsgId] = useState(null)
   const [activeSources, setActiveSources] = useState({})
   const [deletingId, setDeletingId] = useState(null)
+  const [mobilePane, setMobilePane] = useState('list')
 
   // Filter conversations based on search term
   const filteredChats = useMemo(() => {
@@ -91,6 +93,7 @@ export default function ChatHistory({ onOpenChat, onNewChat }) {
 
   const handleSelectChat = (chatId) => {
     setSelectedChatId(chatId)
+    setMobilePane('detail')
   }
 
   const handleResumeInAskAI = async (chatId) => {
@@ -111,6 +114,7 @@ export default function ChatHistory({ onOpenChat, onNewChat }) {
       if (selectedChatId === chatId) {
         setSelectedChatId(null)
         setSelectedChatData(null)
+        setMobilePane('list')
       }
     } finally {
       setDeletingId(null)
@@ -152,7 +156,7 @@ export default function ChatHistory({ onOpenChat, onNewChat }) {
   }
 
   return (
-    <div className="llm-history-wrapper">
+    <div className={`llm-history-wrapper mobile-pane-${mobilePane}`}>
       {/* ===================== LEFT SIDEBAR: TOPIC HISTORY LIST ===================== */}
       <aside className="llm-history-sidebar">
         <div className="llm-sidebar-header">
@@ -263,6 +267,15 @@ export default function ChatHistory({ onOpenChat, onNewChat }) {
             {/* TOP HEADER: FIRST TOPIC OF THE CHAT */}
             <header className="llm-chat-header">
               <div className="llm-chat-header-left">
+                <button
+                  type="button"
+                  className="mobile-back-to-list-btn"
+                  onClick={() => setMobilePane('list')}
+                  title="Back to conversation list"
+                >
+                  <ArrowLeft size={14} />
+                  <span>All Chats</span>
+                </button>
                 <div className="llm-topic-tag">
                   <Sparkles size={13} />
                   <span>Conversation Session</span>

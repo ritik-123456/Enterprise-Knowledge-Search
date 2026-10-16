@@ -6002,5 +6002,563 @@ input, textarea, select {
   font-style: italic;
 }
 
+/* ==========================================================================
+   MOBILE & TABLET RESPONSIVENESS (WORLD-CLASS DESIGN FOR ALL SCREENS)
+   ========================================================================== */
+
+/* Hamburger menu button for mobile */
+.mobile-sidebar-toggle-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.mobile-sidebar-toggle-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-card-hover);
+  border-color: var(--border-light);
+}
+
+.gemini-mobile-backdrop {
+  display: none;
+}
+
+.mobile-back-to-list-btn {
+  display: none;
+}
+
+/* ===================== TABLETS & MOBILE BREAKPOINT (<= 768px) ===================== */
+@media (max-width: 768px) {
+  /* 1. Base App & Layout */
+  .app-container {
+    width: 100vw;
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  .main-wrapper {
+    padding: 0 14px 24px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    overflow-x: hidden;
+  }
+
+  /* 2. Slide-over Mobile Sidebar Drawer */
+  .gemini-sidebar {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    height: 100vh !important;
+    z-index: 10000 !important;
+    transform: translateX(-100%);
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease !important;
+    box-shadow: none;
+    width: 270px !important;
+    min-width: 270px !important;
+    max-width: 270px !important;
+    background-color: var(--bg-sidebar);
+    border-right: 1px solid var(--border-subtle) !important;
+    overflow: visible;
+  }
+
+  .gemini-sidebar.expanded {
+    transform: translateX(0) !important;
+    box-shadow: 14px 0 45px rgba(0, 0, 0, 0.75) !important;
+  }
+
+  .gemini-mobile-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 9998;
+    animation: fadeIn 0.2s ease;
+  }
+
+  /* 3. Top Header on Mobile */
+  .mobile-sidebar-toggle-btn {
+    display: flex;
+  }
+
+  .top-header {
+    padding: 10px 0 8px;
+    gap: 8px;
+  }
+
+  .top-header-left {
+    gap: 8px;
+  }
+
+  .top-logo-badge {
+    padding: 3px 6px;
+    gap: 6px;
+  }
+
+  .top-logo-title {
+    font-size: 13.5px;
+  }
+
+  .top-ai-badge {
+    font-size: 9.5px;
+    padding: 1px 4px;
+  }
+
+  /* Hide long name/dept text on mobile to avoid header squishing */
+  .pill-user-info {
+    display: none !important;
+  }
+
+  .user-header-pill {
+    padding: 4px;
+    border-radius: 50%;
+    min-width: auto;
+  }
+
+  .pill-user-avatar {
+    width: 28px;
+    height: 28px;
+  }
+
+  .icon-button {
+    width: 32px;
+    height: 32px;
+  }
+
+  .header-right-actions {
+    gap: 8px;
+  }
+
+  .header-user-dropdown {
+    right: 0;
+    width: 260px;
+    max-width: calc(100vw - 24px);
+  }
+
+  /* 4. Ask AI: Initial Mode (Hero & Search) */
+  .ask-ai-claude-layout.initial-mode {
+    min-height: calc(100vh - 85px);
+    padding: 16px 2px 32px;
+    justify-content: center;
+  }
+
+  .claude-hero-container {
+    margin-bottom: 16px;
+    width: 100%;
+  }
+
+  .claude-hero-title {
+    font-size: 21px !important;
+    letter-spacing: -0.3px;
+    line-height: 1.35;
+    text-align: center;
+  }
+
+  .ask-ai-search-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0;
+  }
+
+  .search-card-container {
+    padding: 12px 14px 10px;
+    border-radius: 14px;
+  }
+
+  .search-textarea {
+    font-size: 14px;
+    min-height: 42px;
+    line-height: 1.45;
+  }
+
+  .search-actions-bar {
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .search-action-left {
+    flex: 1;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  select.pill-btn {
+    max-width: 135px;
+    font-size: 11px;
+    padding: 4px 6px;
+    text-overflow: ellipsis;
+  }
+
+  .pill-btn {
+    padding: 5px 8px;
+    font-size: 11.5px;
+    gap: 5px;
+  }
+
+  .ask-submit-btn {
+    padding: 6px 14px;
+    font-size: 12.5px;
+    gap: 5px;
+  }
+
+  .shortcut-kbd {
+    display: none !important;
+  }
+
+  /* 5. Document Management Panel */
+  .docs-manager-toggle-bar {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .docs-toggle-btn {
+    padding: 5px 10px;
+    font-size: 11.5px;
+  }
+
+  .active-doc-filter-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 8px 10px;
+    font-size: 11px;
+    width: 100%;
+  }
+
+  .docs-manager-panel {
+    padding: 10px 12px;
+    border-radius: 12px;
+    max-height: 380px;
+  }
+
+  .doc-item-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .doc-item-actions {
+    justify-content: flex-end;
+    width: 100%;
+    gap: 8px;
+  }
+
+  /* 6. Active Conversation Mode */
+  .ask-ai-claude-layout.active-mode {
+    height: calc(100vh - 75px);
+  }
+
+  .claude-thread-scroll {
+    padding: 6px 2px 140px;
+    gap: 16px;
+    width: 100%;
+  }
+
+  .claude-thread-top-bar {
+    padding: 4px 0 10px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .claude-user-bubble {
+    max-width: 92%;
+    padding: 10px 14px;
+    font-size: 13.5px;
+    border-radius: 16px 16px 4px 16px;
+  }
+
+  .claude-assistant-container {
+    padding: 0;
+    gap: 10px;
+  }
+
+  .claude-rendered-markdown {
+    font-size: 14px;
+    line-height: 1.65;
+  }
+
+  .claude-prose-p {
+    font-size: 14px;
+  }
+
+  .claude-heading-1 {
+    font-size: 18px;
+  }
+
+  .claude-heading-2 {
+    font-size: 16px;
+  }
+
+  .claude-heading-3 {
+    font-size: 14.5px;
+  }
+
+  .claude-table-container {
+    margin: 10px 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 6px;
+  }
+
+  .claude-markdown-table {
+    font-size: 12px;
+  }
+
+  .claude-markdown-table th,
+  .claude-markdown-table td {
+    padding: 6px 10px;
+  }
+
+  .claude-code-block-wrapper {
+    margin: 8px 0;
+  }
+
+  .claude-code-pre {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+
+  .claude-inline-citation {
+    min-width: 16px;
+    height: 16px;
+    font-size: 10px;
+  }
+
+  .claude-turn-actions-bar {
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-top: 4px;
+  }
+
+  .claude-ghost-btn {
+    padding: 4px 8px;
+    font-size: 11px;
+    gap: 4px;
+  }
+
+  /* 7. Docked Sticky Input Bar on Mobile */
+  .claude-bottom-dock {
+    padding: 8px 10px max(10px, env(safe-area-inset-bottom));
+  }
+
+  .claude-dock-disclaimer {
+    font-size: 10px;
+    line-height: 1.3;
+  }
+
+  /* 8. Chat History Split Layout on Mobile */
+  .llm-history-wrapper {
+    height: calc(100vh - 65px);
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .llm-history-sidebar {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    border-right: none !important;
+  }
+
+  .llm-history-main {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .llm-history-wrapper.mobile-pane-list .llm-history-sidebar {
+    display: flex !important;
+  }
+
+  .llm-history-wrapper.mobile-pane-list .llm-history-main {
+    display: none !important;
+  }
+
+  .llm-history-wrapper.mobile-pane-detail .llm-history-sidebar {
+    display: none !important;
+  }
+
+  .llm-history-wrapper.mobile-pane-detail .llm-history-main {
+    display: flex !important;
+  }
+
+  .mobile-back-to-list-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border-radius: var(--radius-full);
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-primary);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    margin-bottom: 6px;
+    align-self: flex-start;
+  }
+
+  .llm-chat-header {
+    padding: 14px 16px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .llm-chat-header-actions {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .llm-chat-thread-body {
+    padding: 16px 14px 30px;
+    gap: 18px;
+  }
+
+  .llm-chat-main-topic {
+    font-size: 17px;
+  }
+
+  /* 9. Settings Page on Mobile */
+  .settings-page-container {
+    padding: 16px 4px 40px;
+  }
+
+  .settings-header {
+    gap: 12px;
+  }
+
+  .settings-title {
+    font-size: 18px;
+  }
+
+  .settings-subtitle {
+    font-size: 12.5px;
+  }
+
+  .theme-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .theme-swatches-row {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .preview-search-bar {
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
+  }
+
+  .preview-search-btn {
+    align-self: flex-end;
+  }
+
+  /* 10. Secondary Tables, Metrics & Grids */
+  .results-split-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .stats-cards-grid {
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) !important;
+  }
+
+  .sl-main-split {
+    grid-template-columns: 1fr !important;
+  }
+
+  .sl-stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .follow-up-chips {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .attached-file-pill {
+    max-width: 100% !important;
+  }
+
+  .llm-dock-resume-btn {
+    max-width: 100%;
+    white-space: normal;
+    text-align: center;
+  }
+}
+
+/* ===================== SMALL PHONES (<= 480px) ===================== */
+@media (max-width: 480px) {
+  .claude-hero-title {
+    font-size: 19px !important;
+  }
+
+  .top-logo-badge {
+    padding: 2px 4px;
+  }
+
+  .top-logo-title {
+    font-size: 13px;
+  }
+
+  .search-action-left select.pill-btn {
+    max-width: 110px;
+    font-size: 10.5px;
+  }
+
+  .pill-btn {
+    padding: 4px 7px;
+    font-size: 11px;
+  }
+
+  .ask-submit-btn {
+    padding: 6px 11px;
+    font-size: 11.5px;
+  }
+
+  .login-modal-card {
+    padding: 20px 16px !important;
+    width: calc(100vw - 24px) !important;
+  }
+
+  .login-modal-title {
+    font-size: 18px !important;
+  }
+
+  .sl-stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .follow-up-chips {
+    grid-template-columns: 1fr !important;
+  }
+
+  .llm-dock-resume-btn {
+    font-size: 11.5px !important;
+    padding: 8px 14px !important;
+    gap: 6px !important;
+  }
+
+  .llm-dock-resume-btn span {
+    font-size: 11.5px !important;
+  }
+}
+
 
 

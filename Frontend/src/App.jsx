@@ -456,16 +456,38 @@ export default function App() {
         )}
       </aside>
 
+      {/* Backdrop for mobile drawer when sidebar is opened on mobile */}
+      {isSidebarExpanded && (
+        <div
+          className="gemini-mobile-backdrop"
+          onClick={() => setIsSidebarExpanded(false)}
+          aria-label="Close navigation drawer"
+        />
+      )}
+
       {/* ===================== MAIN CONTENT WRAPPER ===================== */}
       <main className="main-wrapper">
         {/* Top Header */}
         <header className="top-header">
           <div className="top-header-left">
+            {/* Mobile Hamburger Drawer Toggle */}
+            <button
+              className="mobile-sidebar-toggle-btn"
+              onClick={() => setIsSidebarExpanded((prev) => !prev)}
+              title="Toggle Menu"
+              aria-label="Toggle Menu"
+            >
+              <PanelLeftOpen size={18} />
+            </button>
+
             {/* MARVO Top Brand */}
             <div
               className="top-logo-badge"
               title="MARVO AI Knowledge Search"
-              onClick={() => setActiveTab('Ask AI')}
+              onClick={() => {
+                setActiveTab('Ask AI')
+                setIsSidebarExpanded(false)
+              }}
             >
               <MarvoLogo size={18} className="top-brand-logo" />
               <span className="top-logo-title">MARVO</span>
