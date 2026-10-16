@@ -6059,7 +6059,9 @@ input, textarea, select {
     top: 0;
     left: 0;
     bottom: 0;
-    height: 100vh !important;
+    height: 100% !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
     z-index: 10000 !important;
     transform: translateX(-100%);
     transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease !important;
@@ -6069,12 +6071,50 @@ input, textarea, select {
     max-width: 270px !important;
     background-color: var(--bg-sidebar);
     border-right: 1px solid var(--border-subtle) !important;
-    overflow: visible;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    box-sizing: border-box !important;
   }
 
   .gemini-sidebar.expanded {
     transform: translateX(0) !important;
     box-shadow: 14px 0 45px rgba(0, 0, 0, 0.75) !important;
+    padding: 14px 12px max(24px, env(safe-area-inset-bottom)) 12px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    height: 100% !important;
+    height: 100dvh !important;
+  }
+
+  .gemini-expanded-container {
+    height: 100% !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    gap: 16px !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    box-sizing: border-box !important;
+  }
+
+  .gemini-expanded-recents {
+    flex: 0 1 auto !important;
+    max-height: 160px !important;
+    min-height: 0 !important;
+  }
+
+  .gemini-expanded-bottom {
+    margin-top: auto !important;
+    flex-shrink: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    border-top: 1px solid var(--border-subtle) !important;
+    padding-top: 12px !important;
+    padding-bottom: max(16px, env(safe-area-inset-bottom)) !important;
   }
 
   .gemini-mobile-backdrop {
@@ -6138,7 +6178,43 @@ input, textarea, select {
   }
 
   .header-right-actions {
+    display: flex;
+    align-items: center;
     gap: 8px;
+  }
+
+  /* Top Right Sign-In Button on Mobile (Google G logo icon button) */
+  .header-signin-btn {
+    padding: 0 !important;
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0 !important;
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border-subtle) !important;
+    box-shadow: none !important;
+    flex-shrink: 0 !important;
+  }
+
+  .header-signin-btn:hover {
+    background: var(--bg-card-hover) !important;
+    border-color: var(--border-light) !important;
+    transform: none !important;
+  }
+
+  .header-signin-btn .header-signin-text,
+  .header-signin-btn span {
+    display: none !important;
+  }
+
+  .header-signin-btn .google-icon-svg {
+    width: 17px !important;
+    height: 17px !important;
+    margin: 0 !important;
   }
 
   .header-user-dropdown {

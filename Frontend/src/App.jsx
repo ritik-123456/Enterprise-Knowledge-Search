@@ -317,20 +317,24 @@ export default function App() {
                 <span className="expanded-nav-label">New Chat</span>
               </button>
 
-              {/* Search to Learning & Guidance: Only shown when signed in */}
+              <button
+                className={`gemini-expanded-nav-item ${activeTab === 'Chats' ? 'active' : ''}`}
+                onClick={() => {
+                  if (!isAuthenticated) {
+                    setIsLoginModalOpen(true)
+                  } else {
+                    setActiveTab('Chats')
+                  }
+                  setIsSidebarExpanded(false)
+                }}
+              >
+                <Search size={17} className="expanded-nav-icon" />
+                <span className="expanded-nav-label">Search Chats</span>
+              </button>
+
+              {/* Workspaces to Learning: Shown when signed in */}
               {isAuthenticated && (
                 <>
-                  <button
-                    className={`gemini-expanded-nav-item ${activeTab === 'Chats' ? 'active' : ''}`}
-                    onClick={() => {
-                      setActiveTab('Chats')
-                      setIsSidebarExpanded(false)
-                    }}
-                  >
-                    <Search size={17} className="expanded-nav-icon" />
-                    <span className="expanded-nav-label">Search Chats</span>
-                  </button>
-
                   <button
                     className="gemini-expanded-nav-item"
                     onClick={() => {
@@ -376,6 +380,18 @@ export default function App() {
                   </button>
                 </>
               )}
+
+              {/* Settings Tab in Navigation */}
+              <button
+                className={`gemini-expanded-nav-item ${activeTab === 'Settings' ? 'active' : ''}`}
+                onClick={() => {
+                  setActiveTab('Settings')
+                  setIsSidebarExpanded(false)
+                }}
+              >
+                <SettingsIcon size={17} className="expanded-nav-icon" />
+                <span className="expanded-nav-label">Settings</span>
+              </button>
             </div>
 
             {/* Recents Section in Expanded Sidebar: Only shown when signed in */}
@@ -589,9 +605,11 @@ export default function App() {
               <button
                 className="header-signin-btn"
                 onClick={() => setIsLoginModalOpen(true)}
+                title="Sign in with Google"
+                aria-label="Sign in with Google"
               >
                 <GoogleIcon />
-                <span>Sign in with Google</span>
+                <span className="header-signin-text">Sign in with Google</span>
               </button>
             )}
           </div>
