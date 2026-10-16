@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 
 const AuthContext = createContext(null)
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000'
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
 
 export function AuthProvider({ children }) {

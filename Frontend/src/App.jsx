@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   Sparkles,
   ChevronDown,
@@ -88,6 +88,39 @@ export default function App() {
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
   const [showUserDropdown, setShowUserDropdown] = useState(false)
+  const [showHeaderDropdown, setShowHeaderDropdown] = useState(false)
+
+  const sidebarUserDropdownRef = useRef(null)
+  const headerUserDropdownRef = useRef(null)
+  const notificationsRef = useRef(null)
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        sidebarUserDropdownRef.current &&
+        !sidebarUserDropdownRef.current.contains(event.target)
+      ) {
+        setShowUserDropdown(false)
+      }
+      if (
+        headerUserDropdownRef.current &&
+        !headerUserDropdownRef.current.contains(event.target)
+      ) {
+        setShowHeaderDropdown(false)
+      }
+      if (
+        notificationsRef.current &&
+        !notificationsRef.current.contains(event.target)
+      ) {
+        setShowNotifications(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
 
   const { user, isAuthenticated, logout, setIsLoginModalOpen } = useAuth()
   const { chats, activeChat, loadChat, startNewChat } = useChat()
@@ -105,7 +138,10 @@ export default function App() {
               {/* Top Logo Button with Hover Swap to Open Sidebar Icon */}
               <button
                 className="gemini-logo-toggle-btn"
-                onClick={() => setIsSidebarExpanded(true)}
+                onClick={() => {
+                  setShowUserDropdown(false)
+                  setIsSidebarExpanded(true)
+                }}
                 title="Open sidebar"
                 aria-label="Open sidebar"
               >
@@ -189,10 +225,11 @@ export default function App() {
 
               {/* User Profile Avatar / Sign-In */}
               <div
+                ref={sidebarUserDropdownRef}
                 className="gemini-avatar-wrapper"
                 onClick={() => {
                   if (isAuthenticated && user) {
-                    setShowUserDropdown(!showUserDropdown)
+                    setShowUserDropdown((prev) => !prev)
                   } else {
                     setIsLoginModalOpen(true)
                   }
@@ -442,6 +479,7 @@ export default function App() {
             </button>
 
             <button
+              ref={notificationsRef}
               className="icon-button"
               title="Notifications"
               onClick={() => setShowNotifications(!showNotifications)}
@@ -482,22 +520,48 @@ export default function App() {
 
             {isAuthenticated && user ? (
               <div
-                className="user-header-pill"
-                onClick={() => setShowUserDropdown(!showUserDropdown)}
-                style={{ cursor: 'pointer' }}
-                title="Account Menu"
+                ref={headerUserDropdownRef}
+                className="user-header-pill-wrapper"
+                style={{ position: 'relative' }}
               >
-                <img
-                  src={user.picture || AVATARS['Olivia Rhye']}
-                  alt={user.name}
-                  className="pill-user-avatar"
-                  referrerPolicy="no-referrer"
-                  onError={(e) => { e.target.src = AVATARS['Olivia Rhye'] }}
-                />
-                <div className="pill-user-info">
-                  <span className="pill-user-name">{user.name}</span>
-                  <span className="pill-user-dept">{user.department || 'Platform Team'}</span>
+                <div
+                  className="user-header-pill"
+                  onClick={() => setShowHeaderDropdown((prev) => !prev)}
+                  style={{ cursor: 'pointer' }}
+                  title="Account Menu"
+                >
+                  <img
+                    src={user.picture || AVATARS['Olivia Rhye']}
+                    alt={user.name}
+                    className="pill-user-avatar"
+                    referrerPolicy="no-referrer"
+                    onError={(e) => { e.target.src = AVATARS['Olivia Rhye'] }}
+                  />
+                  <div className="pill-user-info">
+                    <span className="pill-user-name">{user.name}</span>
+                    <span className="pill-user-dept">{user.department || 'Platform Team'}</span>
+                  </div>
                 </div>
+
+                {showHeaderDropdown && (
+                  <div className="header-user-dropdown" onClick={(e) => e.stopPropagation()}>
+                    <div className="user-dropdown-header">
+                      <div className="user-dropdown-name">{user.name}</div>
+                      <div className="user-dropdown-email">{user.email}</div>
+                      <span className="user-dropdown-role-tag">{user.role || 'Member'}</span>
+                    </div>
+                    <button
+                      className="user-dropdown-item logout"
+                      onClick={() => {
+                        setShowHeaderDropdown(false)
+                        logout()
+                      }}
+                    >
+                      <LogOut size={14} />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
               <button

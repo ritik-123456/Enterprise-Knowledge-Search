@@ -1,55 +1,55 @@
 [
   {
-    "id": "chat_1792078577001",
+    "id": "chat_1792156384367",
     "user_id": "112675643328808722449",
     "user_email": "ritikkr274@gmail.com",
-    "title": "Tell about octofeature",
+    "title": "tell about octoFeature",
     "messages": [
       {
-        "id": "u-1792078568009-9qyy",
+        "id": "u-1792156335717-wkrz",
         "role": "user",
-        "text": "Tell about octofeature",
-        "timestamp": "09:06 pm"
+        "text": "tell about octoFeature",
+        "timestamp": "06:42 pm"
       },
       {
-        "id": "a-1792078568009-rqs9",
+        "id": "a-1792156335717-d9ra",
         "role": "assistant",
         "isGenerating": false,
         "data": {
           "answerable": false,
-          "answer": "Information regarding 'Tell about octofeature' was not found in the uploaded documents. The topic may not be covered in the available documentation.",
-          "lead": "Information regarding 'Tell about octofeature' was not found in the uploaded documents. The topic may not be covered in the available documentation.",
+          "answer": "Information regarding 'tell about octoFeature' was not found in the uploaded documents. The topic may not be covered in the available documentation.",
+          "lead": "Information regarding 'tell about octoFeature' was not found in the uploaded documents. The topic may not be covered in the available documentation.",
           "keyPoints": [
             "Please upload the relevant PDF documentation using the Attach button.",
             "Verify your query keywords match terminology in the uploaded policy or handbook."
           ],
           "stats": {
-            "responseTime": "8.99s",
+            "responseTime": "48.63s",
             "sourcesUsed": 0,
             "retrievalStrength": "High"
           },
           "sources": []
         },
         "error": null,
-        "timestamp": "09:06 pm"
+        "timestamp": "06:42 pm"
       },
       {
-        "id": "u-1792078601559-rrwp",
+        "id": "u-1792156433839-5zjp",
         "role": "user",
-        "text": "Tell about feature and octofact",
-        "timestamp": "09:06 pm"
+        "text": "Tell about feature and Octopus Fact",
+        "timestamp": "06:43 pm"
       },
       {
-        "id": "a-1792078601559-6d6z",
+        "id": "a-1792156433839-8aor",
         "role": "assistant",
         "isGenerating": false,
         "data": {
           "answerable": true,
-          "answer": "Based on the provided document, the features and octopus facts are detailed below:\n\n|Feature|Octopus fact|\n|---|---|\n|Arms|8 (each lined with suckers)| |\n|Hearts|3| |\n|Blood color|Blue (copper-based)| |\n|Lifespan|1 to 5 years, depending on species| |\n|Species known|300+| |",
-          "lead": "Based on the provided document, the features and octopus facts are detailed below:\n\n|Feature|Octopus fact|\n|---|---|\n|Arms|8 (each lined with suckers)| |\n|Hearts|3| |\n|Blood color|Blue (copper-based)| |\n|Lifespan|1 to 5 years, depending on species| |\n|Species known|300+| |",
+          "answer": "Based on the provided document, the features and corresponding facts about octopuses are compared below:\n\n| Feature | Octopus fact |\n|---|---|\n| Arms | 8 (each lined with suckers) |\n| Hearts | 3 |\n| Blood color | Blue (copper-based) |\n| Lifespan | 1 to 5 years, depending on species |\n| Species known | 300+ |",
+          "lead": "Based on the provided document, the features and corresponding facts about octopuses are compared below:\n\n| Feature | Octopus fact |\n|---|---|\n| Arms | 8 (each lined with suckers) |\n| Hearts | 3 |\n| Blood color | Blue (copper-based) |\n| Lifespan | 1 to 5 years, depending on species |\n| Species known | 300+ |",
           "keyPoints": [],
           "stats": {
-            "responseTime": "7.43s",
+            "responseTime": "169.15s",
             "sourcesUsed": 1,
             "retrievalStrength": "High"
           },
@@ -57,49 +57,37 @@
             {
               "id": 1,
               "source_name": "octopus_guide.pdf",
-              "page": "Page 4",
-              "page_start": 4,
-              "page_end": 4,
-              "snippet": "... The veined octopus has been filmed gathering discarded coconut shell halves, carrying them across the seafloor, and assembling them into a portable shelter. ..."
+              "page": "Pages 2-3",
+              "page_start": 2,
+              "page_end": 3,
+              "snippet": "... |Blood color|Blue (copper-based)| |Lifespan|1 to 5 years, depending on species| ..."
             }
           ]
         },
         "error": null,
-        "timestamp": "09:06 pm"
-      }
-    ],
-    "created_at": "2026-10-15T15:36:49.001166+00:00",
-    "updated_at": "2026-10-15T15:36:49.001166+00:00"
-  },
-  {
-    "id": "chat_1792078377965",
-    "user_id": "112675643328808722449",
-    "user_email": "ritikkr274@gmail.com",
-    "title": "Tell about defense tool kit at a glance",
-    "messages": [
-      {
-        "id": "u-1792078356032-e174",
-        "role": "user",
-        "text": "Tell about defense tool kit at a glance",
-        "timestamp": "09:02 pm"
+        "timestamp": "06:43 pm"
       },
       {
-        "id": "a-1792078356032-unmy",
+        "id": "u-1792156846328-czap",
+        "role": "user",
+        "text": "Explain Beyond Color",
+        "timestamp": "06:50 pm"
+      },
+      {
+        "id": "a-1792156846328-bsjf",
         "role": "assistant",
         "isGenerating": false,
         "data": {
           "answerable": true,
-          "answer": "Based on the provided document, the defense toolkit includes the following:\n\n- **Camouflage:** blend into the background in under a second.\n- **Mimicry:** imitate more dangerous animals.\n- **Ink cloud:** create a smokescreen and confuse predators.\n- **Jet propulsion:** burst away at surprising speed.\n- **Venom:** the blue-ringed octopus carries a potent toxin, despite weighing only a few dozen grams.",
-          "lead": "Based on the provided document, the defense toolkit includes the following:",
+          "answer": "Based on the provided document, the section regarding \"Beyond Color\" details the following facts:\n\n* Octopuses are thought to be colorblind, yet they are able to match their surroundings with stunning accuracy.\n* Researchers have discovered light-sensitive proteins in their skin, which suggests that the skin itself may be able to sense light.\n* Certain species take camouflage further, such as the mimic octopus, which impersonates other animals like flatfish, sea snakes, and lionfish to frighten away predators.",
+          "lead": "Based on the provided document, the section regarding \"Beyond Color\" details the following facts:",
           "keyPoints": [
-            "**Camouflage:** blend into the background in under a second.",
-            "**Mimicry:** imitate more dangerous animals.",
-            "**Ink cloud:** create a smokescreen and confuse predators.",
-            "**Jet propulsion:** burst away at surprising speed.",
-            "**Venom:** the blue-ringed octopus carries a potent toxin, despite weighing only a few dozen grams."
+            "Octopuses are thought to be colorblind, yet they are able to match their surroundings with stunning accuracy.",
+            "Researchers have discovered light-sensitive proteins in their skin, which suggests that the skin itself may be able to sense light.",
+            "Certain species take camouflage further, such as the mimic octopus, which impersonates other animals like flatfish, sea snakes, and lionfish to frighten away predators."
           ],
           "stats": {
-            "responseTime": "21.91s",
+            "responseTime": "26.91s",
             "sourcesUsed": 1,
             "retrievalStrength": "High"
           },
@@ -110,15 +98,15 @@
               "page": "Page 3",
               "page_start": 3,
               "page_end": 3,
-              "snippet": "... - **Ink cloud:** create a smokescreen and confuse predators. - **Jet propulsion:** burst away at surprising speed."
+              "snippet": "... ### **Beyond Color** Remarkably, octopuses are thought to be colorblind, yet they match their surroundings ..."
             }
           ]
         },
         "error": null,
-        "timestamp": "09:02 pm"
+        "timestamp": "06:50 pm"
       }
     ],
-    "created_at": "2026-10-15T15:32:57.970845+00:00",
-    "updated_at": "2026-10-15T15:32:57.970845+00:00"
+    "created_at": "2026-10-16T13:21:13.264628+00:00",
+    "updated_at": "2026-10-16T13:21:13.264628+00:00"
   }
 ]
