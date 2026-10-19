@@ -271,10 +271,8 @@ def test_pdf_headings_extraction_from_outline():
     pdf_bytes = doc.tobytes()
     doc.close()
 
-    records = pdf_service.extract_text_by_pages(pdf_bytes, "manual.pdf")
+    records, headings = pdf_service.extract_text_and_headings(pdf_bytes, "manual.pdf")
     assert len(records) == 2
-
-    headings = pdf_service.last_headings
     assert len(headings) == 3
     assert headings[0].title == "Introduction Overview"
     assert headings[0].level == 1

@@ -204,6 +204,11 @@ class AskAIResponse(BaseModel):
     confidence: str = Field(default="0%", description="Confidence score percentage string")
     sources_used: int = Field(default=0, description="Count of sources used")
     sources: List[CitationSource] = Field(default_factory=list, description="Alias for citations for UI rendering")
+    retrieved_chunks: List[DocumentChunk] = Field(
+        default_factory=list,
+        exclude=True,
+        description="Internal retrieved chunks before generation, excluded from API client serialization"
+    )
 
     @model_validator(mode="after")
     def sync_presentation_fields(self):

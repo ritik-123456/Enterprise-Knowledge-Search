@@ -566,3 +566,195 @@ def test_chat_isolation_user_b_cannot_list_read_or_delete_user_a_chats():
     from app.services.chat_history_service import chat_service
     chat_service.clear_user_chats(USER_A_ID)
     chat_service.clear_user_chats(USER_B_ID)
+
+
+# ============================================================================
+# 12. BM25 RETRIEVER FAILS CLOSED ON MISSING OR FOREIGN USER_ID
+# ============================================================================
+
+def test_hybrid_retriever_bm25_fails_closed_on_missing_or_other_user_id():
+    """
+    Test BM25 fail-closed user isolation:
+    Adding one chunk for user A, one for user B, and one with user_id=None/""
+    to the retriever, then searching as user A.
+    Expect only A's chunk; the ownerless chunk and B's chunk must never be returned.
+    """
+    chunk_a = DocumentChunk(
+        chunk_id="chunk_a_strict_bm25",
+        document_id="doc_a_bm25",
+        document_name="alpha_manual.pdf",
+        page_start=1,
+        page_end=1,
+        char_start=0,
+        char_end=50,
+        content_hash="hash_a_bm25",
+        embedding_model="text-embedding-3-small",
+        section_heading="Alpha Security",
+        text="Kubernetes cluster security policy guidelines for User Alpha operational standards.",
+        token_count=12,
+        user_id=USER_A_ID
+    )
+    chunk_b = DocumentChunk(
+        chunk_id="chunk_b_strict_bm25",
+        document_id="doc_b_bm25",
+        document_name="bravo_manual.pdf",
+        page_start=1,
+        page_end=1,
+        char_start=0,
+        char_end=50,
+        content_hash="hash_b_bm25",
+        embedding_model="text-embedding-3-small",
+        section_heading="Bravo Security",
+        text="Kubernetes cluster security policy guidelines for User Bravo operational standards.",
+        token_count=12,
+        user_id=USER_B_ID
+    )
+    chunk_unowned = DocumentChunk(
+        chunk_id="chunk_unowned_strict_bm25",
+        document_id="doc_unowned_bm25",
+        document_name="unowned_manual.pdf",
+        page_start=1,
+        page_end=1,
+        char_start=0,
+        char_end=50,
+        content_hash="hash_unowned_bm25",
+        embedding_model="text-embedding-3-small",
+        section_heading="Unowned Security",
+        text="Kubernetes cluster security policy guidelines with no tenant owner attached.",
+        token_count=12,
+        user_id=""
+    )
+
+    # 1. Update index for user A passing mixed chunks (including B and ownerless)
+    corpus_bm25_index.update_index([chunk_a, chunk_b, chunk_unowned], user_id=USER_A_ID)
+
+    # 2. Update index for user B
+    corpus_bm25_index.update_index([chunk_b], user_id=USER_B_ID)
+
+    # 3. Search strictly as user A
+    results = corpus_bm25_index.search(user_id=USER_A_ID, query="Kubernetes cluster security policy")
+
+    result_cids = [c.chunk_id for c, _ in results]
+    assert "chunk_a_strict_bm25" in result_cids
+    assert "chunk_b_strict_bm25" not in result_cids
+    assert "chunk_unowned_strict_bm25" not in result_cids
+    assert len(results) == 1
+    assert results[0][0].user_id == USER_A_ID
+
+
+def test_bm25_cache_miss_rebuild_from_user_chunks_db(caplog):
+    """
+    Test BM25 cache-miss rebuild path:
+    1. Populate vector_store.user_chunks_db with chunks for User A.
+    2. Clear corpus_bm25_index._user_corpora to force a cache miss.
+    3. Call corpus_bm25_index.search(user_id=USER_A_ID, query=...).
+    4. Expect User A's chunks to be returned.
+    5. Verify log does NOT report any skipped chunks (0 chunks skipped).
+    """
+    import logging
+    chunk_a = DocumentChunk(
+        chunk_id="chunk_a_cache_miss_001",
+        document_id="doc_a_cm",
+        document_name="alpha_architecture.pdf",
+        page_start=1,
+        page_end=1,
+        char_start=0,
+        char_end=50,
+        content_hash="hash_a_cm",
+        embedding_model="text-embedding-3-small",
+        section_heading="System Architecture",
+        text="Kubernetes cluster control plane high availability configuration and telemetry.",
+        token_count=12,
+        user_id=USER_A_ID
+    )
+
+    # 1. Put chunk into vector_store.user_chunks_db
+    vector_store.user_chunks_db.setdefault(USER_A_ID, {})[chunk_a.chunk_id] = chunk_a
+
+    # 2. Clear corpus_bm25_index._user_corpora
+    corpus_bm25_index._user_corpora.clear()
+    assert USER_A_ID not in corpus_bm25_index._user_corpora
+
+    # 3. Call search as User A under caplog to inspect warning logs
+    with caplog.at_level(logging.WARNING):
+        results = corpus_bm25_index.search(user_id=USER_A_ID, query="Kubernetes control plane high availability")
+
+    # 4. Expect A's chunk back
+    result_cids = [c.chunk_id for c, _ in results]
+    assert "chunk_a_cache_miss_001" in result_cids
+    assert len(results) == 1
+    assert results[0][0].user_id == USER_A_ID
+
+    # 5. Check logs: no skipped chunks warning should be emitted
+    skipped_warnings = [rec.message for rec in caplog.records if "Skipped" in rec.message and "BM25 index" in rec.message]
+    assert len(skipped_warnings) == 0, f"Expected 0 skipped chunk warnings, got: {skipped_warnings}"
+
+
+def test_bm25_empty_valid_chunks_cleans_corpus_and_search_returns_empty():
+    """
+    Test when all chunks passed have user_id="":
+    1. update_index(all_unowned_chunks, user_id=USER_A_ID) removes any existing
+       entry from self._user_corpora[user_id] and returns early without building BM25.
+    2. Calling search(user_id=USER_A_ID, ...) returns [] cleanly without raising any error.
+    """
+    unowned_1 = DocumentChunk(
+        chunk_id="chunk_unowned_001",
+        document_id="doc_unowned_1",
+        document_name="unowned_doc.pdf",
+        page_start=1,
+        page_end=1,
+        char_start=0,
+        char_end=50,
+        content_hash="hash_u1",
+        embedding_model="text-embedding-3-small",
+        section_heading="General Info",
+        text="Kubernetes operational clusters and deployment practices.",
+        token_count=10,
+        user_id=""
+    )
+    unowned_2 = DocumentChunk(
+        chunk_id="chunk_unowned_002",
+        document_id="doc_unowned_2",
+        document_name="unowned_doc2.pdf",
+        page_start=1,
+        page_end=1,
+        char_start=0,
+        char_end=50,
+        content_hash="hash_u2",
+        embedding_model="text-embedding-3-small",
+        section_heading="General Info 2",
+        text="Kubernetes networking policies and ingress controller setups.",
+        token_count=10,
+        user_id=""
+    )
+
+    # First, populate user A with a legitimate chunk so an entry exists in _user_corpora
+    valid_a = DocumentChunk(
+        chunk_id="chunk_a_initial",
+        document_id="doc_a_initial",
+        document_name="a.pdf",
+        page_start=1,
+        page_end=1,
+        char_start=0,
+        char_end=40,
+        content_hash="hash_ai",
+        embedding_model="text-embedding-3-small",
+        section_heading="Initial",
+        text="Kubernetes cluster for User Alpha.",
+        token_count=8,
+        user_id=USER_A_ID
+    )
+    corpus_bm25_index.update_index([valid_a], user_id=USER_A_ID)
+    assert USER_A_ID in corpus_bm25_index._user_corpora
+
+    # Now call update_index where ALL chunks have user_id=""
+    corpus_bm25_index.update_index([unowned_1, unowned_2], user_id=USER_A_ID)
+
+    # Verify existing entry was removed
+    assert USER_A_ID not in corpus_bm25_index._user_corpora
+
+    # Ensure search(user_id=USER_A_ID, ...) returns [] without raising
+    results = corpus_bm25_index.search(user_id=USER_A_ID, query="Kubernetes operational clusters")
+    assert results == []
+
+

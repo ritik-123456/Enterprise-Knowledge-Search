@@ -616,9 +616,10 @@ export default function App() {
         </header>
 
         {/* Main Content View */}
-        {activeTab === 'Ask AI' && <AskAI />}
+        {activeTab === 'Ask AI' && <AskAI key={user?.id ?? 'anon'} />}
         {activeTab === 'Chats' && (
           <ChatHistory
+            key={user?.id ?? 'anon'}
             onOpenChat={() => setActiveTab('Ask AI')}
             onNewChat={() => setActiveTab('Ask AI')}
           />

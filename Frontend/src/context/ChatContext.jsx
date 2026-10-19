@@ -1,15 +1,38 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from './AuthContext'
 
-const ChatContext = createContext(null)
+export const ChatContext = createContext(null)
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
 
 export function ChatProvider({ children }) {
-  const { user, token, isAuthenticated, handleUnauthorized } = useAuth()
+  const { user, token, isAuthenticated, handleUnauthorized, registerResetHook } = useAuth()
   const [chats, setChats] = useState([])
   const [isLoadingChats, setIsLoadingChats] = useState(false)
   const [activeChat, setActiveChat] = useState(null)
   const [searchFilter, setSearchFilter] = useState('')
+
+  const chatsAbortControllerRef = useRef(null)
+  const currentUserIdRef = useRef(user?.id)
+
+  useEffect(() => {
+    currentUserIdRef.current = user?.id
+  }, [user?.id])
+
+  // Reset chat context state on explicit auth logout
+  useEffect(() => {
+    if (!registerResetHook) return
+    const unregister = registerResetHook(() => {
+      if (chatsAbortControllerRef.current) {
+        chatsAbortControllerRef.current.abort()
+        chatsAbortControllerRef.current = null
+      }
+      setChats([])
+      setActiveChat(null)
+      setSearchFilter('')
+      setIsLoadingChats(false)
+    })
+    return unregister
+  }, [registerResetHook])
 
   const getAuthHeaders = useCallback((extra = {}) => {
     const headers = { ...extra }
@@ -20,18 +43,30 @@ export function ChatProvider({ children }) {
   }, [token])
 
   const fetchUserChats = useCallback(async (query = '') => {
-    if (!isAuthenticated || !token || !user) {
+    if (!isAuthenticated || !token || !user?.id) {
       setChats([])
       return
     }
+
+    if (chatsAbortControllerRef.current) {
+      chatsAbortControllerRef.current.abort()
+    }
+    const controller = new AbortController()
+    chatsAbortControllerRef.current = controller
+    const requestedUserId = user?.id
+
     setIsLoadingChats(true)
     try {
       const params = new URLSearchParams()
       if (query) params.append('search', query)
 
       const res = await fetch(`${API_BASE}/api/chats?${params.toString()}`, {
-        headers: getAuthHeaders()
+        headers: getAuthHeaders(),
+        signal: controller.signal
       })
+      if (controller.signal.aborted || currentUserIdRef.current !== requestedUserId) {
+        return
+      }
       if (res.status === 401) {
         handleUnauthorized?.()
         setChats([])
@@ -39,21 +74,37 @@ export function ChatProvider({ children }) {
       }
       if (res.ok) {
         const data = await res.json()
-        setChats(data)
+        if (!controller.signal.aborted && currentUserIdRef.current === requestedUserId) {
+          setChats(data)
+        }
       }
     } catch (err) {
+      if (err.name === 'AbortError') return
       console.warn('Could not load user chats:', err)
     } finally {
-      setIsLoadingChats(false)
+      if (!controller.signal.aborted && currentUserIdRef.current === requestedUserId) {
+        setIsLoadingChats(false)
+      }
     }
-  }, [isAuthenticated, token, user, getAuthHeaders, handleUnauthorized])
+  }, [isAuthenticated, token, user?.id, getAuthHeaders, handleUnauthorized])
 
   useEffect(() => {
+    if (chatsAbortControllerRef.current) {
+      chatsAbortControllerRef.current.abort()
+      chatsAbortControllerRef.current = null
+    }
+
     if (isAuthenticated && token && user?.id) {
       fetchUserChats()
     } else {
       setChats([])
       setActiveChat(null)
+    }
+
+    return () => {
+      if (chatsAbortControllerRef.current) {
+        chatsAbortControllerRef.current.abort()
+      }
     }
   }, [isAuthenticated, token, user?.id, fetchUserChats])
 

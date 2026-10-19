@@ -61,8 +61,33 @@ class CorpusBM25Index:
                     break
         if not user_id:
             raise ValueError("user_id is required to update BM25 index")
+        user_id = str(user_id).strip()
 
-        user_chunks = {c.chunk_id: c for c in chunks}
+        valid_chunks: List[DocumentChunk] = []
+        skipped_doc_ids: Set[str] = set()
+        skipped_count = 0
+
+        for c in chunks:
+            c_uid = str(getattr(c, "user_id", None) or "").strip()
+            if not c_uid or c_uid != user_id:
+                skipped_count += 1
+                doc_id = getattr(c, "document_id", None)
+                if doc_id:
+                    skipped_doc_ids.add(str(doc_id))
+            else:
+                valid_chunks.append(c)
+
+        if skipped_count > 0:
+            logger.warning(
+                f"Skipped {skipped_count} chunks with missing, empty, or mismatched user_id when building BM25 index for user '{user_id}'. "
+                f"Affected document IDs: {sorted(list(skipped_doc_ids))}"
+            )
+
+        if not valid_chunks:
+            self._user_corpora.pop(user_id, None)
+            return
+
+        user_chunks = {c.chunk_id: c for c in valid_chunks}
         chunk_ids = list(user_chunks.keys())
         corpus_tokens = [
             tokenize_for_bm25(f"{c.document_name} {c.section_heading or ''} {c.text}")
@@ -87,6 +112,7 @@ class CorpusBM25Index:
         """Removes chunks belonging to a document for a specific user and rebuilds their BM25 index."""
         if not user_id:
             raise ValueError("user_id is required to delete from BM25 index")
+        user_id = str(user_id).strip()
         if user_id in self._user_corpora:
             remaining = [
                 c for c in self._user_corpora[user_id]["chunks"].values()
@@ -98,6 +124,7 @@ class CorpusBM25Index:
         """Clears all BM25 index data for a specific user."""
         if not user_id:
             raise ValueError("user_id is required to clear BM25 index")
+        user_id = str(user_id).strip()
         self._user_corpora.pop(user_id, None)
 
     def search(
@@ -118,6 +145,7 @@ class CorpusBM25Index:
         """
         if not user_id or not isinstance(user_id, str) or not user_id.strip():
             raise ValueError("user_id is required for BM25 search")
+        user_id = str(user_id).strip()
 
         user_data = self._user_corpora.get(user_id)
         if not user_data or not user_data.get("bm25_model"):
@@ -145,6 +173,12 @@ class CorpusBM25Index:
             return []
 
         scores = bm25_model.get_scores(q_tokens)
+        if max(scores, default=0.0) <= 0.0 and user_data.get("corpus_tokens"):
+            try:
+                bm25_plus = BM25Plus(user_data["corpus_tokens"])
+                scores = bm25_plus.get_scores(q_tokens)
+            except Exception:
+                pass
         scored_candidates: List[Tuple[DocumentChunk, float]] = []
 
         for cid, score in zip(chunk_ids, scores):
@@ -154,9 +188,9 @@ class CorpusBM25Index:
             if not chunk:
                 continue
 
-            # Strict tenant pre-filter
-            chunk_uid = getattr(chunk, "user_id", None)
-            if chunk_uid and chunk_uid != user_id:
+            # Strict tenant pre-filter (fail-closed)
+            chunk_uid = str(getattr(chunk, "user_id", None) or "").strip()
+            if chunk_uid != user_id:
                 continue
 
             # Exact filter matching parity with vector_store

@@ -533,7 +533,7 @@ def run_evaluation(
         latency = time.time() - t0
 
         # Retrieve candidate chunks that were in context
-        retrieved_chunks = getattr(rag_service, "last_retrieved_chunks", [])
+        retrieved_chunks = resp.retrieved_chunks
         if not retrieved_chunks:
             for cite in resp.citations:
                 retrieved_chunks.append(

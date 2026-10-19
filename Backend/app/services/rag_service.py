@@ -450,7 +450,7 @@ class RAGService:
             return self._create_not_found_response(question, start_time)
 
         retrieved_map = {chunk.chunk_id: (chunk, v_score) for chunk, v_score, _ in top_chunks}
-        self.last_retrieved_chunks = [chunk for chunk, _, _ in top_chunks]
+        retrieved_chunks = [chunk for chunk, _, _ in top_chunks]
 
         # Step 4: Calculate Retrieval Strength based on top score and margin over second result (Requirement 6)
         top_score = top_chunks[0][1]
@@ -631,7 +631,8 @@ class RAGService:
                 confidence=retrieval_strength,
                 response_time=measured_time,
                 sources_used=len(valid_citations),
-                sources=valid_citations
+                sources=valid_citations,
+                retrieved_chunks=retrieved_chunks
             )
         except Exception as e:
             logger.error(f"OpenAI execution error: {e}", exc_info=True)
@@ -785,7 +786,7 @@ class RAGService:
             mmr_ms = (time.time() - t_mmr_0) * 1000
 
             retrieved_map = {chunk.chunk_id: (chunk, score) for chunk, score in final_chunks}
-            self.last_retrieved_chunks = [chunk for chunk, _ in final_chunks]
+            retrieved_chunks = [chunk for chunk, _ in final_chunks]
 
             # Calculate qualitative retrieval strength
             top_score = final_chunks[0][1] if final_chunks else 0.0
@@ -947,7 +948,8 @@ class RAGService:
                 confidence=retrieval_strength,
                 response_time=measured_time,
                 sources_used=len(valid_citations),
-                sources=valid_citations
+                sources=valid_citations,
+                retrieved_chunks=retrieved_chunks
             )
         except Exception as e:
             logger.error(f"OpenAI execution error: {e}", exc_info=True)

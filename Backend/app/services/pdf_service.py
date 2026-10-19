@@ -3,7 +3,7 @@ import logging
 import re
 import shutil
 import unicodedata
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Any, Optional, Tuple, Union
 
 import pymupdf
 
@@ -62,7 +62,7 @@ class PDFCorruptError(PDFExtractionError):
 
 class PDFService:
     def __init__(self):
-        self.last_headings: List[PDFHeading] = []
+        pass
 
     def validate_pdf_bytes(self, pdf_bytes: bytes, file_name: str = "") -> None:
         """
@@ -289,7 +289,12 @@ class PDFService:
 
         return headings
 
-    def extract_text_by_pages(self, pdf_bytes: bytes, file_name: str = "") -> List[PDFPageRecord]:
+    def extract_text_by_pages(
+        self,
+        pdf_bytes: bytes,
+        file_name: str = "",
+        return_headings: bool = False
+    ) -> Union[List[PDFPageRecord], Tuple[List[PDFPageRecord], List[PDFHeading]]]:
         """
         Extracts text from a PDF document page by page.
         - Primary extractor: PyMuPDF (page.get_text('text', sort=True)).
@@ -301,6 +306,7 @@ class PDFService:
         self.validate_pdf_bytes(pdf_bytes, file_name)
 
         extracted_records: List[PDFPageRecord] = []
+        headings: List[PDFHeading] = []
         empty_pages: List[int] = []
         total_chars = 0
 
@@ -339,7 +345,7 @@ class PDFService:
                         f"Document contains {doc.page_count} pages, exceeding max allowed {settings.MAX_PAGES} pages."
                     )
 
-                self.last_headings = self.extract_headings(doc)
+                headings = self.extract_headings(doc)
 
                 # Layout-aware extraction via pymupdf4llm when enabled
                 layout_chunks = None
@@ -527,7 +533,20 @@ class PDFService:
             f"{len(extracted_records)} pages with text, {total_chars} total characters."
         )
 
+        if return_headings:
+            return extracted_records, headings
         return extracted_records
+
+    def extract_text_and_headings(
+        self,
+        pdf_bytes: bytes,
+        file_name: str = ""
+    ) -> Tuple[List[PDFPageRecord], List[PDFHeading]]:
+        """
+        Extracts both text pages and document outline headings.
+        Returns (records, headings) without storing headings on singleton state.
+        """
+        return self.extract_text_by_pages(pdf_bytes, file_name=file_name, return_headings=True)
 
 
 pdf_service = PDFService()

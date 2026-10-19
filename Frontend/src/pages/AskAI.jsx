@@ -46,7 +46,7 @@ const STARTER_PROMPTS = [
 ]
 
 export default function AskAI() {
-  const { user, token, isAuthenticated, handleUnauthorized, openLoginModal } = useAuth()
+  const { user, token, isAuthenticated, handleUnauthorized, openLoginModal, registerResetHook } = useAuth()
   const { activeChat, saveChat, startNewChat } = useChat()
   const [currentChatId, setCurrentChatId] = useState(null)
 
@@ -106,6 +106,12 @@ export default function AskAI() {
   const [uploads, setUploads] = useState([])
   const [fileError, setFileError] = useState('')
   const activePollersRef = useRef(new Map())
+  const docsAbortControllerRef = useRef(null)
+  const currentUserIdRef = useRef(user?.id)
+
+  useEffect(() => {
+    currentUserIdRef.current = user?.id
+  }, [user?.id])
 
   // UI Micro-interactions
   const [feedback, setFeedback] = useState(null)
@@ -135,17 +141,28 @@ export default function AskAI() {
   // 1. DOCUMENT REPOSITORY SYNC (GET /api/documents)
   // -------------------------------------------------------------
   const fetchDocuments = useCallback(async () => {
-    if (!token || !isAuthenticated) {
+    if (!token || !isAuthenticated || !user?.id) {
       setDocuments([])
       return
     }
+
+    if (docsAbortControllerRef.current) {
+      docsAbortControllerRef.current.abort()
+    }
+    const controller = new AbortController()
+    docsAbortControllerRef.current = controller
+    const requestedUserId = user?.id
 
     setIsDocsLoading(true)
     setDocsError(null)
     try {
       const res = await fetch(`${API_BASE}/api/documents`, {
-        headers: getAuthHeaders()
+        headers: getAuthHeaders(),
+        signal: controller.signal
       })
+      if (controller.signal.aborted || currentUserIdRef.current !== requestedUserId) {
+        return
+      }
       if (res.status === 401) {
         handleUnauthorized?.()
         setDocuments([])
@@ -153,36 +170,105 @@ export default function AskAI() {
       }
       if (res.ok) {
         const data = await res.json()
-        setDocuments(data)
+        if (!controller.signal.aborted && currentUserIdRef.current === requestedUserId) {
+          setDocuments(data)
+        }
       } else {
-        setDocsError(`Unable to fetch document list (${res.status})`)
+        if (!controller.signal.aborted && currentUserIdRef.current === requestedUserId) {
+          setDocsError(`Unable to fetch document list (${res.status})`)
+        }
       }
-    } catch {
-      setDocsError('Backend server is currently offline.')
+    } catch (err) {
+      if (err.name === 'AbortError') return
+      if (!controller.signal.aborted && currentUserIdRef.current === requestedUserId) {
+        setDocsError('Backend server is currently offline.')
+      }
     } finally {
-      setIsDocsLoading(false)
+      if (!controller.signal.aborted && currentUserIdRef.current === requestedUserId) {
+        setIsDocsLoading(false)
+      }
     }
-  }, [token, isAuthenticated, getAuthHeaders, handleUnauthorized])
+  }, [token, isAuthenticated, user?.id, getAuthHeaders, handleUnauthorized])
 
-  // Re-fetch documents when auth state changes (strictly keyed to user?.id)
+  // Reset ALL per-user UI states whenever user?.id changes or becomes null
   useEffect(() => {
+    if (docsAbortControllerRef.current) {
+      docsAbortControllerRef.current.abort()
+      docsAbortControllerRef.current = null
+    }
+
+    activePollersRef.current.forEach((intervalId) => clearInterval(intervalId))
+    activePollersRef.current.clear()
+
+    setDocuments([])
+    setSelectedDocId('')
+    setUploads([])
+    setAnswerData(null)
+    setActiveSources({})
+    setThreadMessages([])
+    setInputVal('')
+    setCurrentQuestion('')
+    setHasSearched(false)
+    setIsGenerating(false)
+    setSearchError(null)
+    setDocsError(null)
+    setFileError('')
+    setCurrentChatId(null)
+    setMessageFeedback({})
+    setBookmarkedMsgs({})
+    setCopiedMsgId(null)
+    setDeletingDocId(null)
+
     if (user?.id && token) {
       fetchDocuments()
-    } else {
-      setDocuments([])
-      setAnswerData(null)
-      setActiveSources({})
     }
+
     return () => {
+      if (docsAbortControllerRef.current) {
+        docsAbortControllerRef.current.abort()
+      }
       activePollersRef.current.forEach((intervalId) => clearInterval(intervalId))
       activePollersRef.current.clear()
     }
   }, [user?.id, token, fetchDocuments])
 
+  // Explicit logout hook reset
+  useEffect(() => {
+    if (!registerResetHook) return
+    const unregister = registerResetHook(() => {
+      if (docsAbortControllerRef.current) {
+        docsAbortControllerRef.current.abort()
+        docsAbortControllerRef.current = null
+      }
+      activePollersRef.current.forEach((intervalId) => clearInterval(intervalId))
+      activePollersRef.current.clear()
+
+      setDocuments([])
+      setSelectedDocId('')
+      setUploads([])
+      setAnswerData(null)
+      setActiveSources({})
+      setThreadMessages([])
+      setInputVal('')
+      setCurrentQuestion('')
+      setHasSearched(false)
+      setIsGenerating(false)
+      setSearchError(null)
+      setDocsError(null)
+      setFileError('')
+      setCurrentChatId(null)
+      setMessageFeedback({})
+      setBookmarkedMsgs({})
+      setCopiedMsgId(null)
+      setDeletingDocId(null)
+    })
+    return unregister
+  }, [registerResetHook])
+
   // -------------------------------------------------------------
   // 2. REAL-TIME UPLOADS & POLLING STATUS (GET /api/documents/{id}/status)
   // -------------------------------------------------------------
-  const pollDocumentStatus = useCallback((tempUploadId, docId) => {
+  const pollDocumentStatus = useCallback((tempUploadId, docId, uploadUserId) => {
     if (activePollersRef.current.has(tempUploadId)) {
       clearInterval(activePollersRef.current.get(tempUploadId))
     }
@@ -191,17 +277,26 @@ export default function AskAI() {
     const maxAttempts = 60
 
     const intervalId = setInterval(async () => {
+      // Poller guard: stop and discard if current user ID no longer matches the user when upload started
+      if (!currentUserIdRef.current || currentUserIdRef.current !== uploadUserId) {
+        clearInterval(intervalId)
+        activePollersRef.current.delete(tempUploadId)
+        return
+      }
+
       attempts += 1
       if (attempts > maxAttempts) {
         clearInterval(intervalId)
         activePollersRef.current.delete(tempUploadId)
-        setUploads(prev =>
-          prev.map(u =>
-            u.id === tempUploadId
-              ? { ...u, status: 'failed', errorReason: 'Processing timed out after 90 seconds' }
-              : u
+        if (currentUserIdRef.current === uploadUserId) {
+          setUploads(prev =>
+            prev.map(u =>
+              u.id === tempUploadId
+                ? { ...u, status: 'failed', errorReason: 'Processing timed out after 90 seconds' }
+                : u
+            )
           )
-        )
+        }
         return
       }
 
@@ -209,6 +304,11 @@ export default function AskAI() {
         const res = await fetch(`${API_BASE}/api/documents/${docId}/status`, {
           headers: getAuthHeaders()
         })
+        if (!currentUserIdRef.current || currentUserIdRef.current !== uploadUserId) {
+          clearInterval(intervalId)
+          activePollersRef.current.delete(tempUploadId)
+          return
+        }
         if (res.status === 401) {
           clearInterval(intervalId)
           activePollersRef.current.delete(tempUploadId)
@@ -217,6 +317,11 @@ export default function AskAI() {
         }
         if (res.ok) {
           const data = await res.json()
+          if (!currentUserIdRef.current || currentUserIdRef.current !== uploadUserId) {
+            clearInterval(intervalId)
+            activePollersRef.current.delete(tempUploadId)
+            return
+          }
           if (data.status === 'ready') {
             clearInterval(intervalId)
             activePollersRef.current.delete(tempUploadId)
@@ -250,6 +355,7 @@ export default function AskAI() {
       return
     }
 
+    const uploadUserId = user?.id
     const tempId = `upl-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`
     const newUpload = {
       id: tempId,
@@ -271,6 +377,11 @@ export default function AskAI() {
         headers: getAuthHeaders(),
         body: formData
       })
+
+      // Poller / upload guard: discard if user changed during upload
+      if (!currentUserIdRef.current || currentUserIdRef.current !== uploadUserId) {
+        return
+      }
 
       if (res.status === 401) {
         setUploads(prev => prev.filter(u => u.id !== tempId))
@@ -314,9 +425,12 @@ export default function AskAI() {
               : u
           )
         )
-        pollDocumentStatus(tempId, assignedDocId)
+        pollDocumentStatus(tempId, assignedDocId, uploadUserId)
       }
     } catch {
+      if (!currentUserIdRef.current || currentUserIdRef.current !== uploadUserId) {
+        return
+      }
       setUploads(prev =>
         prev.map(u =>
           u.id === tempId

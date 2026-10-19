@@ -1,6 +1,6 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
 
-const AuthContext = createContext(null)
+export const AuthContext = createContext(null)
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000'
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
@@ -24,6 +24,14 @@ export function AuthProvider({ children }) {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false)
   const [loginPromptMessage, setLoginPromptMessage] = useState(null)
   const [configuredClientId, setConfiguredClientId] = useState(GOOGLE_CLIENT_ID)
+  const resetHooksRef = useRef(new Set())
+
+  const registerResetHook = useCallback((fn) => {
+    if (typeof fn === 'function') {
+      resetHooksRef.current.add(fn)
+    }
+    return () => resetHooksRef.current.delete(fn)
+  }, [])
 
   const openLoginModal = useCallback((msg = null) => {
     setLoginPromptMessage(msg)
@@ -36,6 +44,8 @@ export function AuthProvider({ children }) {
     } finally {
       setUser(null)
       setToken(null)
+      setAuthError(null)
+      setLoginPromptMessage(null)
       localStorage.removeItem('eks_auth_user')
       localStorage.removeItem('eks_auth_token')
       if (window.google?.accounts?.id) {
@@ -45,6 +55,13 @@ export function AuthProvider({ children }) {
           // Ignore
         }
       }
+      resetHooksRef.current.forEach(fn => {
+        try {
+          fn()
+        } catch (err) {
+          console.warn('Logout reset hook error:', err)
+        }
+      })
     }
   }, [])
 
@@ -167,6 +184,7 @@ export function AuthProvider({ children }) {
     loginPromptMessage,
     openLoginModal,
     handleUnauthorized,
+    registerResetHook,
     clientId: configuredClientId
   }
 
