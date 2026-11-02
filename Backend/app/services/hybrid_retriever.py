@@ -108,6 +108,32 @@ class CorpusBM25Index:
             "bm25_model": bm25_model,
         }
 
+    def invalidate(self, user_id: str) -> None:
+        """Invalidates user's in-memory BM25 index cache."""
+        if user_id:
+            self._user_corpora.pop(str(user_id).strip(), None)
+
+    def ensure_index_synced(self, user_id: str) -> None:
+        """
+        Validates the in-memory BM25 index against vector_store chunks.
+        If cache is empty, rebuilds from user chunks synced from vector_store / Qdrant.
+        """
+        if not user_id:
+            return
+        user_id = str(user_id).strip()
+        user_data = self._user_corpora.get(user_id)
+        if not user_data or not user_data.get("bm25_model") or not user_data.get("chunks"):
+            vector_store.ensure_chunks_synced(user_id)
+            user_db_chunks = vector_store.user_chunks_db.get(user_id, {})
+            if user_db_chunks:
+                ready_chunks = [
+                    c.to_public() if hasattr(c, "to_public") else c
+                    for c in user_db_chunks.values()
+                ]
+                self.update_index(ready_chunks, user_id=user_id)
+            else:
+                self.clear_user_index(user_id)
+
     def delete_document(self, document_id: str, user_id: str):
         """Removes chunks belonging to a document for a specific user and rebuilds their BM25 index."""
         if not user_id:
@@ -118,7 +144,10 @@ class CorpusBM25Index:
                 c for c in self._user_corpora[user_id]["chunks"].values()
                 if c.document_id != document_id
             ]
-            self.update_index(remaining, user_id=user_id)
+            if remaining:
+                self.update_index(remaining, user_id=user_id)
+            else:
+                self.clear_user_index(user_id)
 
     def clear_user_index(self, user_id: str):
         """Clears all BM25 index data for a specific user."""
@@ -147,20 +176,10 @@ class CorpusBM25Index:
             raise ValueError("user_id is required for BM25 search")
         user_id = str(user_id).strip()
 
-        user_data = self._user_corpora.get(user_id)
-        if not user_data or not user_data.get("bm25_model"):
-            # Sync from vector_store's user_chunks_db or Qdrant storage on cache miss
-            user_db_chunks = vector_store.user_chunks_db.get(user_id, {})
-            if not user_db_chunks:
-                vector_store.sync_chunks_from_storage(user_id=user_id)
-                user_db_chunks = vector_store.user_chunks_db.get(user_id, {})
-            if user_db_chunks:
-                self.update_index(
-                    [c.to_public() if hasattr(c, "to_public") else c for c in user_db_chunks.values()],
-                    user_id=user_id
-                )
-                user_data = self._user_corpora.get(user_id)
+        # Ensure index is synchronized with ready documents in DocumentRegistry
+        self.ensure_index_synced(user_id)
 
+        user_data = self._user_corpora.get(user_id)
         if not user_data or not user_data.get("bm25_model") or not user_data.get("chunks"):
             return []
 

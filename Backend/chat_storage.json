@@ -1,112 +1,240 @@
 [
   {
-    "id": "chat_1792156384367",
+    "id": "chat_1793625432559",
     "user_id": "112675643328808722449",
     "user_email": "ritikkr274@gmail.com",
-    "title": "tell about octoFeature",
+    "title": "Explain Ritik_N.pdf",
     "messages": [
       {
-        "id": "u-1792156335717-wkrz",
+        "id": "u-1793625427159-n3e9",
         "role": "user",
-        "text": "tell about octoFeature",
-        "timestamp": "06:42 pm"
+        "text": "Explain Ritik_N.pdf",
+        "timestamp": "06:47 pm"
       },
       {
-        "id": "a-1792156335717-d9ra",
+        "id": "a-1793625427159-7uul",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": true,
+          "answer": "Based on the provided document, here is the information regarding Ritik Kumar:\n\n### **Personal and Contact Information**\n- **Name:** Ritik Kumar\n- **Contact Details:** Phone (+91-9142091917), Email (ritikkr274@gmail.com), LinkedIn, GitHub, Portfolio, and LeetCode.\n\n---\n\n### **Education**\n- **Vellore Institute of Technology (2023–2027):** B.Tech in Computer Science and Engineering with a CGPA of 9.33/10.\n- **KCP Siddhartha Adarsh Residential Public School:** Senior Secondary with 91.4%.\n\n---\n\n### **Technical Skills**\n- **Languages:** Java, SQL.\n- **Core Concepts:** SDLC, Agile/Scrum, Object-Oriented Programming, Data Structures & Algorithms, Software Testing (API & Unit), Technical Documentation, Code Reviews.\n- **Web Tools:** React.js, Tailwind CSS, Node.js, RESTful APIs, JWT Authentication, Middleware.\n- **Databases:** MySQL, MongoDB, Qdrant (Vector DB).\n- **Developer Tools:** Git, GitHub, Postman, Vercel, Render, cursor, Antigravity.\n- **AI / RAG:** Retrieval-Augmented Generation, Hybrid Search (BM25 + Semantic Search), Prompt Engineering, RAG Evaluation.\n- **Learning:** LLM Observability, Agentic Workflows.\n\n---\n\n### **Experience**\n- **Software Developer Intern - Osdag** (Open Steel Design and graphics) | *Dec 2025 – July 2026 (Remote)*\n  - Engineered an Excel upload and parsing workflow with automatic schema mapping.\n  - Architected responsive React.js frontend components with reusable design patterns and theming.\n  - Implemented activity logging middleware for audit trails and product analytics.\n  - Conducted code reviews and managed task prioritization for a 3-member development team.\n\n---\n\n### **Projects Undertaken**\n\n| Project Name | Tech Stack & Links | Key Details |\n|:--- |:--- |:--- |\n| **Enterprise Knowledge Search – Multi-Hop RAG Engine for Cross-Document Question Answering** | React.js, FastAPI, Qdrant, BM25, LLM<br>[Link](https://enterprise-knowledge-search.vercel.app/) | • Built a RAG engine for multi-hop/multi-document questions using query decomposition and hybrid BM25 + Semantic Search.<br>• Designed layout-aware ingestion with table-row splitting, parent-child chunking, and per-document balancing.<br>• Benchmarked 20 cross-questions (overall correctness ~75%–80%, multi-document ~20%–50%).<br>• Developed a FastAPI backend with versioned re-indexing and a React UI. |\n| **CodeLens AI – AI-Powered Distributed Code Review Platform** | React.js, Node.js, PostgreSQL, Redis, BullMQ<br>[Link](https://code-lens-ai-pearl.vercel.app/) | • Architected an AI-powered code review automation system processing PRs for line-level bugs, vulnerabilities, and performance.<br>• Engineered an asynchronous distributed processing pipeline using Bull",
+          "lead": "Based on the provided document, here is the information regarding Ritik Kumar: ### **Personal and Contact Information**",
+          "keyPoints": [
+            "**Name:** Ritik Kumar",
+            "**Contact Details:** Phone (+91-9142091917), Email (ritikkr274@gmail.com), LinkedIn, GitHub, Portfolio, and LeetCode.",
+            "**Vellore Institute of Technology (2023–2027):** B.Tech in Computer Science and Engineering with a CGPA of 9.33/10.",
+            "**KCP Siddhartha Adarsh Residential Public School:** Senior Secondary with 91.4%.",
+            "**Languages:** Java, SQL.",
+            "**Core Concepts:** SDLC, Agile/Scrum, Object-Oriented Programming, Data Structures & Algorithms, Software Testing (API & Unit), Technical Documentation, Code Reviews.",
+            "**Web Tools:** React.js, Tailwind CSS, Node.js, RESTful APIs, JWT Authentication, Middleware.",
+            "**Databases:** MySQL, MongoDB, Qdrant (Vector DB).",
+            "**Developer Tools:** Git, GitHub, Postman, Vercel, Render, cursor, Antigravity.",
+            "**AI / RAG:** Retrieval-Augmented Generation, Hybrid Search (BM25 + Semantic Search), Prompt Engineering, RAG Evaluation.",
+            "**Learning:** LLM Observability, Agentic Workflows.",
+            "**Software Developer Intern - Osdag** (Open Steel Design and graphics) | *Dec 2025 – July 2026 (Remote)*",
+            "Engineered an Excel upload and parsing workflow with automatic schema mapping.",
+            "Architected responsive React.js frontend components with reusable design patterns and theming.",
+            "Implemented activity logging middleware for audit trails and product analytics.",
+            "Conducted code reviews and managed task prioritization for a 3-member development team."
+          ],
+          "stats": {
+            "responseTime": "5.38s",
+            "sourcesUsed": 2,
+            "retrievalStrength": "High"
+          },
+          "sources": [
+            {
+              "id": 1,
+              "source_name": "Ritik_N.pdf",
+              "page": "Page 1",
+              "page_start": 1,
+              "page_end": 1,
+              "snippet": "... - **Languages:** Java, SQL. - **Core Concepts:** SDLC, Agile/Scrum, Object-Oriented Programming, Data Structures & Algorithms, Software Testing (API & Unit), Technical Documentation, Code Reviews."
+            },
+            {
+              "id": 2,
+              "source_name": "Ritik_N.pdf",
+              "page": "Page 1",
+              "page_start": 1,
+              "page_end": 1,
+              "snippet": "[Document: Ritik_N.pdf | Section: Introduction | Page 1] � +91-9142091917 — � ritikkr274@gmail.com — � LinkedIn — � GitHub — � Portfolio — � LeetCode"
+            }
+          ]
+        },
+        "error": null,
+        "timestamp": "06:47 pm"
+      }
+    ],
+    "created_at": "2026-11-02T13:17:12.568668+00:00",
+    "updated_at": "2026-11-02T13:17:12.568668+00:00"
+  },
+  {
+    "id": "chat_1793625313580",
+    "user_id": "102475241056590293647",
+    "user_email": "ritik.23bce10979@vitbhopal.ac.in",
+    "title": "Explain this pdf",
+    "messages": [
+      {
+        "id": "u-1793625286782-1c7j",
+        "role": "user",
+        "text": "Explain this pdf",
+        "timestamp": "06:44 PM"
+      },
+      {
+        "id": "a-1793625286782-rxrl",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": true,
+          "answer": "Based on the provided document, here is an explanation of its contents:\n\n* **Personal Information:** The document is a resume for Ritik Kumar (contact email: ritikkr274@gmail.com, phone: +91-9142091917).\n* **Education:** Ritik is pursuing a B.Tech in Computer Science and Engineering at the Vellore Institute of Technology (2023–2027) with a CGPA of 9.33/10, and completed senior secondary education at KCP Siddhartha Adarsh Residential Public School with 91.4%.\n* **Technical Skills:** Includes languages (C++, Python, SQL), frontend (React.js, Tailwind CSS), backend (Node.js, FastAPI, RESTful APIs, JWT Authentication, Middleware), AI RAG, databases (MongoDB, MySQL, Qdrant), developer tools (Git, GitHub, Postman, Vercel, Render), and learning areas (System Design, LLM Observability, Agentic Workflows).\n* **Experience:** Details a Software Developer Intern role at Osdag (Dec 2025 – July 2026), focusing on Excel parsing workflows, React.js frontend component architecture, activity logging middleware, and technical leadership.\n* **Projects Undertaken:** Highlights two major projects:\n  1. *Enterprise Knowledge Search Multi-Hop RAG Engine* (React.js, FastAPI, Qdrant, etc.).\n  2. *CodeLens AI - AI-Powered Distributed Code Review Platform* (React.js, Node.js, PostgreSQL, Redis, BullMQ).\n* **Certifications & Achievements:** Includes Oracle Cloud Infrastructure Certified Architect Associate, runner-up at the IIT Madras Smart Student Hostel Hackathon, a CodeChef rating of 1140, DSA problem-solving, and completion of coding challenges.",
+          "lead": "Based on the provided document, here is an explanation of its contents:",
+          "keyPoints": [
+            "**Personal Information:** The document is a resume for Ritik Kumar (contact email: ritikkr274@gmail.com, phone: +91-9142091917).",
+            "**Education:** Ritik is pursuing a B.Tech in Computer Science and Engineering at the Vellore Institute of Technology (2023–2027) with a CGPA of 9.33/10, and completed senior secondary education at KCP Siddhartha Adarsh Residential Public School with 91.4%.",
+            "**Technical Skills:** Includes languages (C++, Python, SQL), frontend (React.js, Tailwind CSS), backend (Node.js, FastAPI, RESTful APIs, JWT Authentication, Middleware), AI RAG, databases (MongoDB, MySQL, Qdrant), developer tools (Git, GitHub, Postman, Vercel, Render), and learning areas (System Design, LLM Observability, Agentic Workflows).",
+            "**Experience:** Details a Software Developer Intern role at Osdag (Dec 2025 – July 2026), focusing on Excel parsing workflows, React.js frontend component architecture, activity logging middleware, and technical leadership.",
+            "**Projects Undertaken:** Highlights two major projects:",
+            "**Certifications & Achievements:** Includes Oracle Cloud Infrastructure Certified Architect Associate, runner-up at the IIT Madras Smart Student Hostel Hackathon, a CodeChef rating of 1140, DSA problem-solving, and completion of coding challenges."
+          ],
+          "stats": {
+            "responseTime": "26.75s",
+            "sourcesUsed": 2,
+            "retrievalStrength": "High"
+          },
+          "sources": [
+            {
+              "id": 1,
+              "source_name": "LPL.pdf",
+              "page": "Page 1",
+              "page_start": 1,
+              "page_end": 1,
+              "snippet": "... **PROJECTS** **UNDERTAKEN** **Enterprise** **Knowledge** **Search** **Multi-Hop** **RAG** **Engine** *React.js, FastAPI, Qdrant, PyMuPDF4LLM, BM25, Cross-Encoder Reranking,LLM*"
+            },
+            {
+              "id": 2,
+              "source_name": "LPL.pdf",
+              "page": "Page 1",
+              "page_start": 1,
+              "page_end": 1,
+              "snippet": "[Document: LPL.pdf | Section: Introduction | Page 1] +91-9142091917 —"
+            }
+          ]
+        },
+        "error": null,
+        "timestamp": "06:44 PM"
+      }
+    ],
+    "created_at": "2026-11-02T13:15:13.592221+00:00",
+    "updated_at": "2026-11-02T13:15:13.592221+00:00"
+  },
+  {
+    "id": "chat_1792655265649",
+    "user_id": "112675643328808722449",
+    "user_email": "ritikkr274@gmail.com",
+    "title": "Explain Native texts",
+    "messages": [
+      {
+        "id": "u-1792655262475-jqqu",
+        "role": "user",
+        "text": "Explain Native texts",
+        "timestamp": "01:17 pm"
+      },
+      {
+        "id": "a-1792655262475-tbvh",
         "role": "assistant",
         "isGenerating": false,
         "data": {
           "answerable": false,
-          "answer": "Information regarding 'tell about octoFeature' was not found in the uploaded documents. The topic may not be covered in the available documentation.",
-          "lead": "Information regarding 'tell about octoFeature' was not found in the uploaded documents. The topic may not be covered in the available documentation.",
+          "answer": "Information regarding 'Explain Native texts' was not found in the uploaded documents. The topic may not be covered in the available documentation.",
+          "lead": "Information regarding 'Explain Native texts' was not found in the uploaded documents. The topic may not be covered in the available documentation.",
           "keyPoints": [
             "Please upload the relevant PDF documentation using the Attach button.",
             "Verify your query keywords match terminology in the uploaded policy or handbook."
           ],
           "stats": {
-            "responseTime": "48.63s",
+            "responseTime": "3.17s",
             "sourcesUsed": 0,
             "retrievalStrength": "High"
           },
           "sources": []
         },
         "error": null,
-        "timestamp": "06:42 pm"
+        "timestamp": "01:17 pm"
       },
       {
-        "id": "u-1792156433839-5zjp",
+        "id": "u-1792655347068-2t6m",
         "role": "user",
-        "text": "Tell about feature and Octopus Fact",
-        "timestamp": "06:43 pm"
+        "text": "Explain offboarding Checklist",
+        "timestamp": "01:19 pm"
       },
       {
-        "id": "a-1792156433839-8aor",
+        "id": "a-1792655347068-sps2",
         "role": "assistant",
         "isGenerating": false,
         "data": {
           "answerable": true,
-          "answer": "Based on the provided document, the features and corresponding facts about octopuses are compared below:\n\n| Feature | Octopus fact |\n|---|---|\n| Arms | 8 (each lined with suckers) |\n| Hearts | 3 |\n| Blood color | Blue (copper-based) |\n| Lifespan | 1 to 5 years, depending on species |\n| Species known | 300+ |",
-          "lead": "Based on the provided document, the features and corresponding facts about octopuses are compared below:\n\n| Feature | Octopus fact |\n|---|---|\n| Arms | 8 (each lined with suckers) |\n| Hearts | 3 |\n| Blood color | Blue (copper-based) |\n| Lifespan | 1 to 5 years, depending on species |\n| Species known | 300+ |",
+          "answer": "When an employee leaves Orbit Labs, the manager must complete the following steps in order:\n\n1. Revoke VPN and single sign-on access on the last working day.\n2. Collect the laptop, access card and any issued peripherals.\n3. Transfer ownership of shared documents to the manager.\n4. Conduct an exit interview within 5 working days of the resignation date.\n5. Confirm final settlement with Finance within 30 days.",
+          "lead": "When an employee leaves Orbit Labs, the manager must complete the following steps in order:\n\n1. Revoke VPN and single sign-on access on the last working day.\n2. Collect the laptop, access card and any issued peripherals.\n3. Transfer ownership of shared documents to the manager.\n4. Conduct an exit interview within 5 working days of the resignation date.\n5. Confirm final settlement with Finance within 30 days.",
           "keyPoints": [],
           "stats": {
-            "responseTime": "169.15s",
+            "responseTime": "3.60s",
             "sourcesUsed": 1,
             "retrievalStrength": "High"
           },
           "sources": [
             {
               "id": 1,
-              "source_name": "octopus_guide.pdf",
-              "page": "Pages 2-3",
+              "source_name": "orbit_labs_policy_test (1).pdf",
+              "page": "Page 2",
               "page_start": 2,
-              "page_end": 3,
-              "snippet": "... |Blood color|Blue (copper-based)| |Lifespan|1 to 5 years, depending on species| ..."
+              "page_end": 2,
+              "snippet": "... Offboarding Checklist** When an employee leaves Orbit Labs, the manager must complete the following steps in order:"
             }
           ]
         },
         "error": null,
-        "timestamp": "06:43 pm"
+        "timestamp": "01:19 pm"
       },
       {
-        "id": "u-1792156846328-czap",
+        "id": "u-1792655375320-2w6u",
         "role": "user",
-        "text": "Explain Beyond Color",
-        "timestamp": "06:50 pm"
+        "text": "Explain Policy review",
+        "timestamp": "01:19 pm"
       },
       {
-        "id": "a-1792156846328-bsjf",
+        "id": "a-1792655375320-j2kc",
         "role": "assistant",
         "isGenerating": false,
         "data": {
           "answerable": true,
-          "answer": "Based on the provided document, the section regarding \"Beyond Color\" details the following facts:\n\n* Octopuses are thought to be colorblind, yet they are able to match their surroundings with stunning accuracy.\n* Researchers have discovered light-sensitive proteins in their skin, which suggests that the skin itself may be able to sense light.\n* Certain species take camouflage further, such as the mimic octopus, which impersonates other animals like flatfish, sea snakes, and lionfish to frighten away predators.",
-          "lead": "Based on the provided document, the section regarding \"Beyond Color\" details the following facts:",
+          "answer": "Based on the provided document, the details regarding the policy review are as follows:\n\n* **Review Frequency:** The policy is reviewed once a year in January.\n* **Next Scheduled Review Date:** 15 January 2027.\n* **Contact for Questions:** Questions can be sent to the People and Security Team at policy@orbitlabs.example.",
+          "lead": "Based on the provided document, the details regarding the policy review are as follows:",
           "keyPoints": [
-            "Octopuses are thought to be colorblind, yet they are able to match their surroundings with stunning accuracy.",
-            "Researchers have discovered light-sensitive proteins in their skin, which suggests that the skin itself may be able to sense light.",
-            "Certain species take camouflage further, such as the mimic octopus, which impersonates other animals like flatfish, sea snakes, and lionfish to frighten away predators."
+            "**Review Frequency:** The policy is reviewed once a year in January.",
+            "**Next Scheduled Review Date:** 15 January 2027.",
+            "**Contact for Questions:** Questions can be sent to the People and Security Team at policy@orbitlabs.example."
           ],
           "stats": {
-            "responseTime": "26.91s",
+            "responseTime": "4.14s",
             "sourcesUsed": 1,
             "retrievalStrength": "High"
           },
           "sources": [
             {
               "id": 1,
-              "source_name": "octopus_guide.pdf",
+              "source_name": "orbit_labs_policy_test (1).pdf",
               "page": "Page 3",
               "page_start": 3,
               "page_end": 3,
-              "snippet": "... ### **Beyond Color** Remarkably, octopuses are thought to be colorblind, yet they match their surroundings ..."
+              "snippet": "... Questions can be sent to the People and Security Team at [policy@orbitlabs.example](mailto:policy@orbitlabs.example). The next scheduled review date is 15 January 2027."
             }
           ]
         },
         "error": null,
-        "timestamp": "06:50 pm"
+        "timestamp": "01:19 pm"
       }
     ],
-    "created_at": "2026-10-16T13:21:13.264628+00:00",
-    "updated_at": "2026-10-16T13:21:13.264628+00:00"
+    "created_at": "2026-10-22T07:49:39.470394+00:00",
+    "updated_at": "2026-11-02T13:10:24.223163+00:00"
   }
 ]

@@ -347,15 +347,41 @@ class PDFService:
 
                 headings = self.extract_headings(doc)
 
-                # Layout-aware extraction via pymupdf4llm when enabled
+                # Layout-aware extraction via pdf_oxide or pymupdf4llm when enabled
                 layout_chunks = None
                 if getattr(settings, "ENABLE_LAYOUT_PARSER", True):
-                    try:
-                        import pymupdf4llm
-                        layout_chunks = pymupdf4llm.to_markdown(doc, page_chunks=True)
-                    except Exception as llm_err:
-                        logger.warning(f"pymupdf4llm layout extraction failed for '{file_name}': {llm_err}. Using standard extractor.")
-                        layout_chunks = None
+                    parser_engine = getattr(settings, "PDF_PARSER_ENGINE", "pdf_oxide").lower()
+                    if parser_engine == "pdf_oxide":
+                        try:
+                            import pdf_oxide
+                            pdoc = pdf_oxide.PdfDocument.from_bytes(pdf_bytes)
+                            if pdoc.page_count == doc.page_count:
+                                layout_chunks = []
+                                for page_idx in range(pdoc.page_count):
+                                    md_text = pdoc.to_markdown(page_idx) or ""
+                                    tables = []
+                                    try:
+                                        tables = pdoc.extract_tables(page_idx) or []
+                                    except Exception:
+                                        tables = []
+                                    layout_chunks.append({
+                                        "metadata": {"page": page_idx + 1},
+                                        "text": md_text,
+                                        "tables": tables
+                                    })
+                                logger.info(f"Extracted {len(layout_chunks)} pages using fast Rust pdf_oxide engine for '{file_name}'.")
+                        except Exception as oxide_err:
+                            logger.warning(f"pdf_oxide layout extraction failed for '{file_name}': {oxide_err}. Falling back to pymupdf4llm.")
+                            layout_chunks = None
+
+                    # Fallback to pymupdf4llm if pdf_oxide wasn't used or failed
+                    if layout_chunks is None:
+                        try:
+                            import pymupdf4llm
+                            layout_chunks = pymupdf4llm.to_markdown(doc, page_chunks=True)
+                        except Exception as llm_err:
+                            logger.warning(f"pymupdf4llm layout extraction failed for '{file_name}': {llm_err}. Using standard extractor.")
+                            layout_chunks = None
 
                 if layout_chunks and len(layout_chunks) == doc.page_count:
                     for item in layout_chunks:

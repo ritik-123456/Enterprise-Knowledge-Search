@@ -9,7 +9,13 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     try {
       const saved = localStorage.getItem('eks_auth_user')
-      return saved ? JSON.parse(saved) : null
+      if (!saved) return null
+      const parsed = JSON.parse(saved)
+      if (parsed?.department && parsed.department.toLowerCase().includes('platform')) {
+        parsed.department = parsed.role || 'Member'
+        localStorage.setItem('eks_auth_user', JSON.stringify(parsed))
+      }
+      return parsed
     } catch {
       return null
     }

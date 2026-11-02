@@ -4,13 +4,7 @@ import {
   Moon,
   Sun,
   Sparkles,
-  Check,
-  CheckCircle2,
-  Sliders,
-  FileText,
-  ShieldCheck,
-  Send,
-  ArrowRight
+  Check
 } from 'lucide-react'
 import { useTheme } from '../context/ThemeContext'
 
@@ -147,57 +141,6 @@ export default function Settings() {
               </div>
             )
           })}
-        </div>
-      </section>
-
-      {/* Live Interactive Preview Showcase */}
-      <section className="settings-card preview-section">
-        <div className="settings-card-header">
-          <div>
-            <h2 className="settings-card-title">Live Interface Preview</h2>
-            <p className="settings-card-desc">
-              Demonstration of how typography, citations, cards, and input fields adapt to the current <strong>{THEMES.find(t => t.id === theme)?.name}</strong>.
-            </p>
-          </div>
-        </div>
-
-        <div className="preview-demo-box">
-          {/* Simulated Search Bar */}
-          <div className="preview-search-bar">
-            <span className="preview-search-placeholder">Ask a question across indexed enterprise documents...</span>
-            <button type="button" className="preview-search-btn">
-              <Send size={13} />
-              <span>Ask AI</span>
-            </button>
-          </div>
-
-          {/* Simulated Assistant Answer Card */}
-          <div className="preview-assistant-card">
-            <div className="preview-assistant-top">
-              <div className="preview-assistant-name">
-                <Sparkles size={14} className="preview-sparkle-icon" />
-                <span>Enterprise AI Assistant</span>
-              </div>
-              <span className="preview-confidence-tag">HIGH confidence • 2 verified sources</span>
-            </div>
-
-            <p className="preview-prose">
-              Based on the <strong>IT Security and Remote Work Policy</strong>, all employees working remotely are required to connect via the company VPN (<strong>OrbitSecure</strong>) prior to accessing internal repositories.
-            </p>
-
-            <div className="preview-sources-row">
-              <span className="preview-source-pill active">
-                <span>[1]</span>
-                <span>Orbit_Security_Policy.pdf</span>
-                <span className="preview-source-page">Page 1</span>
-              </span>
-              <span className="preview-source-pill">
-                <span>[2]</span>
-                <span>EKS_Handbook_v2.pdf</span>
-                <span className="preview-source-page">Page 7</span>
-              </span>
-            </div>
-          </div>
         </div>
       </section>
     </div>

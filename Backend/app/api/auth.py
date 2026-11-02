@@ -119,9 +119,9 @@ async def authenticate_with_google(payload: GoogleAuthRequest):
     family_name = token_info.get("family_name")
     email_verified = str(token_info.get("email_verified", "")).lower() in ("true", "1")
 
-    # Determine enterprise department & role (e.g., admin or platform team)
+    # Determine enterprise department & role (e.g., admin or member)
     role = "Admin" if email.endswith(("@acme.com", "@company.internal")) or "admin" in email.lower() else "Member"
-    department = "Platform Reliability"
+    department = role
 
     user = UserProfile(
         id=str(sub),

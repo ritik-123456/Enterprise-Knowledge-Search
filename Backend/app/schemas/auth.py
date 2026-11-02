@@ -17,7 +17,7 @@ class UserProfile(BaseModel):
     picture: Optional[str] = Field(default=None, description="Google profile picture URL")
     email_verified: bool = Field(default=True, description="Email verification status from Google")
     role: str = Field(default="Member", description="Enterprise role: Admin, Member, or Viewer")
-    department: str = Field(default="Platform Team", description="Assigned organizational department")
+    department: str = Field(default="Member", description="Assigned organizational department")
 
 
 class AuthResponse(BaseModel):

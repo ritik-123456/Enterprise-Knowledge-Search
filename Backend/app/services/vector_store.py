@@ -2,9 +2,10 @@ import hashlib
 import logging
 import math
 import re
+import threading
 import time
 import uuid
-from typing import List, Tuple, Optional, Dict, Any, Union
+from typing import List, Tuple, Optional, Dict, Any, Union, Set
 
 from pydantic import SecretStr
 import qdrant_client
@@ -153,6 +154,29 @@ class VectorStoreService:
             self.client = get_shared_client()
 
         self._ensure_collection()
+        # Launch background scan for legacy untenanted points without blocking startup
+        try:
+            threading.Thread(target=self._scan_legacy_untenanted_points, daemon=True).start()
+        except Exception:
+            pass
+
+    def _scan_legacy_untenanted_points(self) -> None:
+        """Background thread scanning for legacy untenanted (user_id=None) points."""
+        try:
+            res, _ = self.client.scroll(
+                collection_name=self.collection_name,
+                limit=10,
+                with_payload=["user_id"],
+                with_vectors=False
+            )
+            untenanted = [p for p in res if not p.payload or not p.payload.get("user_id")]
+            if untenanted:
+                logger.info(
+                    f"Background notice: detected legacy untenanted points in collection '{self.collection_name}'. "
+                    f"Run scripts/purge_untenanted_chunks.py to clean up."
+                )
+        except Exception as e:
+            logger.debug(f"Background legacy scan notice: {e}")
 
     def _retry_call(self, operation, max_retries: int = 3, retry_delay: float = 0.1):
         """
@@ -666,6 +690,30 @@ class VectorStoreService:
                     break
         except Exception as e:
             logger.warning(f"Could not sync chunks from Qdrant: {e}")
+
+    def ensure_chunks_synced(self, user_id: str, ready_doc_ids: Optional[Set[str]] = None) -> None:
+        """
+        Validates in-memory user_chunks_db cache.
+        If cache is empty or missing expected documents, syncs from Qdrant storage.
+        """
+        if not user_id:
+            return
+        user_id = str(user_id).strip()
+        if user_id not in self.user_chunks_db or not self.user_chunks_db.get(user_id):
+            self.sync_chunks_from_storage(user_id=user_id)
+        elif ready_doc_ids is not None:
+            user_chunks = self.user_chunks_db.get(user_id, {})
+            cached_doc_ids = {c.document_id for c in user_chunks.values() if getattr(c, "document_id", None)}
+            if not ready_doc_ids.issubset(cached_doc_ids):
+                self.sync_chunks_from_storage(user_id=user_id)
+
+    def get_user_chunks(self, user_id: str) -> List[DocumentChunk]:
+        """Returns all cached chunks belonging strictly to user_id, ensuring cache is synced."""
+        if not user_id:
+            return []
+        user_id = str(user_id).strip()
+        self.ensure_chunks_synced(user_id)
+        return list(self.user_chunks_db.get(user_id, {}).values())
 
     def search(
         self,

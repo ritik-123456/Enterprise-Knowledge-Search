@@ -23,6 +23,7 @@ import { AVATARS } from './components/BrandIcons'
 import AskAI from './pages/AskAI'
 import Settings from './pages/Settings'
 import ChatHistory from './pages/ChatHistory'
+import GuidesAndDocs from './pages/GuidesAndDocs'
 import { useAuth } from './context/AuthContext'
 import { useChat } from './context/ChatContext'
 import LoginModal from './components/LoginModal'
@@ -80,6 +81,10 @@ const SUBMENU_METADATA = {
   'Settings': {
     title: 'Settings',
     subtitle: 'Workspace theme, appearance, and interface preferences.'
+  },
+  'Guides & Docs': {
+    title: 'Guides & Documentation',
+    subtitle: 'User manual, search prompting strategies, document management, and verified citations.'
   }
 }
 
@@ -202,9 +207,9 @@ export default function App() {
                     </button>
 
                     <button
-                      className="gemini-rail-btn"
-                      onClick={() => setActiveTab('Ask AI')}
-                      title="Learning & Guidance"
+                      className={`gemini-rail-btn ${activeTab === 'Guides & Docs' ? 'active' : ''}`}
+                      onClick={() => setActiveTab('Guides & Docs')}
+                      title="Guides & Docs"
                     >
                       <GraduationCap size={18} />
                     </button>
@@ -369,9 +374,9 @@ export default function App() {
                   </button>
 
                   <button
-                    className="gemini-expanded-nav-item"
+                    className={`gemini-expanded-nav-item ${activeTab === 'Guides & Docs' ? 'active' : ''}`}
                     onClick={() => {
-                      setActiveTab('Ask AI')
+                      setActiveTab('Guides & Docs')
                       setIsSidebarExpanded(false)
                     }}
                   >
@@ -512,7 +517,11 @@ export default function App() {
           </div>
 
           <div className="header-right-actions">
-            <button className="icon-button" title="Help & Documentation">
+            <button
+              className={`icon-button ${activeTab === 'Guides & Docs' ? 'active' : ''}`}
+              title="Guides & Documentation"
+              onClick={() => setActiveTab('Guides & Docs')}
+            >
               <HelpCircle size={18} />
             </button>
 
@@ -577,7 +586,11 @@ export default function App() {
                   />
                   <div className="pill-user-info">
                     <span className="pill-user-name">{user.name}</span>
-                    <span className="pill-user-dept">{user.department || 'Platform Team'}</span>
+                    <span className="pill-user-dept">
+                      {user.department && !user.department.toLowerCase().includes('platform')
+                        ? user.department
+                        : (user.role || 'Member')}
+                    </span>
                   </div>
                 </div>
 
@@ -625,6 +638,7 @@ export default function App() {
           />
         )}
         {activeTab === 'Settings' && <Settings />}
+        {activeTab === 'Guides & Docs' && <GuidesAndDocs onNavigateTab={setActiveTab} />}
 
         {/* Google Authentication Dialog */}
         <LoginModal />

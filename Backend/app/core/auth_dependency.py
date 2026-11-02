@@ -19,7 +19,7 @@ def create_access_token(
     email: str,
     name: str = "",
     role: str = "Member",
-    department: str = "Platform Team",
+    department: str = "Member",
     expires_in_seconds: Optional[int] = None
 ) -> str:
     """

@@ -23,6 +23,11 @@ class Settings(BaseSettings):
     # Core Application Info
     PROJECT_NAME: str = "Enterprise Knowledge Search"
     API_PREFIX: str = "/api"
+    ENVIRONMENT: str = Field(
+        default="development",
+        validation_alias=AliasChoices("ENVIRONMENT", "ENV", "APP_ENV", "NODE_ENV"),
+        description="Application environment: 'development', 'production', or 'test'"
+    )
 
     # LLM & Embedding Credentials & Models
     # Loaded from env var or .env; default is empty string so secrets never live in source code.
@@ -170,7 +175,12 @@ class Settings(BaseSettings):
     )
     ENABLE_LAYOUT_PARSER: bool = Field(
         default=True,
-        description="Toggle layout-aware PDF parser (pymupdf4llm) preserving tables and structure"
+        description="Toggle layout-aware PDF parser preserving tables and structure"
+    )
+    PDF_PARSER_ENGINE: str = Field(
+        default="pdf_oxide",
+        validation_alias=AliasChoices("PDF_PARSER_ENGINE", "PDF_PARSER", "PDF_ENGINE"),
+        description="Engine for layout-aware PDF extraction: 'pdf_oxide' (fast Rust engine) or 'pymupdf4llm'"
     )
 
     # Configurable Sizing for Parent-Child & Reranking
@@ -253,11 +263,26 @@ class Settings(BaseSettings):
             if val and val.strip():
                 return val.strip()
         return (
-            os.getenv("SUPABASE_KEY")
-            or os.getenv("SUPABASE_ANON_KEY")
-            or os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+            os.getenv("SUPABASE_SERVICE_ROLE_KEY")
             or os.getenv("SUPABASE_SERVICE_KEY")
+            or os.getenv("SUPABASE_KEY")
+            or os.getenv("SUPABASE_ANON_KEY")
             or os.getenv("SUPABASE_API_KEY")
+        )
+
+    @property
+    def is_production(self) -> bool:
+        """Returns True if running in production environment."""
+        env = (os.getenv("ENVIRONMENT") or os.getenv("ENV") or os.getenv("APP_ENV") or self.ENVIRONMENT or "").strip().lower()
+        return env in ("prod", "production")
+
+    @property
+    def is_test_mode(self) -> bool:
+        """Returns True if running under pytest or explicit test environment."""
+        return bool(
+            sys.modules.get("pytest") is not None
+            or os.getenv("TESTING") == "1"
+            or os.getenv("PYTEST_CURRENT_TEST") is not None
         )
 
     @property

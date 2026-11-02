@@ -201,6 +201,11 @@ class ChatHistoryService:
         """
         Deletes a chat conversation ensuring caller ownership.
         """
+        # Enforce existence and ownership check first
+        existing = self.get_chat_by_id(chat_id, user_id=user_id)
+        if not existing:
+            return False
+
         success = False
         if self.is_supabase_connected:
             try:
