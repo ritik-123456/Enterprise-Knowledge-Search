@@ -7,6 +7,7 @@ from typing import List, Dict, Any, Optional
 import fitz
 from starlette.concurrency import run_in_threadpool
 from fastapi import APIRouter, UploadFile, File, HTTPException, status, Request, BackgroundTasks, Depends
+from fastapi.responses import StreamingResponse
 
 from app.core.config import settings
 from app.core.auth_dependency import get_current_user_id
@@ -433,15 +434,17 @@ def delete_document(
     }
 
 
-@router.post("/ask", response_model=AskAIResponse)
+@router.post("/ask")
 def ask_question(
     payload: AskAIRequest,
+    stream: bool = False,
     user_id: str = Depends(get_current_user_id)
 ):
     """
     Ask a question against indexed enterprise knowledge strictly for the authenticated caller.
     Citations and chunks are isolated to the caller's tenancy.
     Supports optional document_id to search a specific caller document.
+    Supports stream=True for real-time Server-Sent Events (SSE) token streaming.
     """
     if not payload.question.strip():
         raise HTTPException(
@@ -458,6 +461,21 @@ def ask_question(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Document '{payload.document_id}' not found."
             )
+
+    if stream:
+        return StreamingResponse(
+            rag_service.answer_query_stream(
+                question=payload.question,
+                user_id=user_id,
+                doc_filter=payload.document_filter,
+                document_id=payload.document_id
+            ),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "X-Accel-Buffering": "no"
+            }
+        )
 
     start_time = time.time()
     response = rag_service.answer_query(

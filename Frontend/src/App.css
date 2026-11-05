@@ -1826,6 +1826,51 @@ select {
   transform: translateY(-1px);
 }
 
+.ask-submit-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Stop Execution Button (ChatGPT style) */
+.ask-submit-btn.stop-execution-btn {
+  padding: 6px 12px !important;
+  gap: 5px !important;
+  font-size: 12px !important;
+  min-width: auto !important;
+  background: #ef4444 !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.35) !important;
+  border: 1px solid rgba(220, 38, 38, 0.5);
+  animation: pulseStopBtn 1.5s ease-in-out infinite alternate;
+}
+
+.ask-submit-btn.stop-execution-btn:hover {
+  background: #dc2626 !important;
+  box-shadow: 0 3px 10px rgba(239, 68, 68, 0.5) !important;
+  transform: translateY(-1px);
+}
+
+@keyframes pulseStopBtn {
+  0% {
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+  }
+  100% {
+    box-shadow: 0 3px 14px rgba(239, 68, 68, 0.6);
+  }
+}
+
+/* Upload Paused State Button */
+.ask-submit-btn.is-upload-paused {
+  background: rgba(100, 116, 139, 0.15) !important;
+  color: var(--text-muted) !important;
+  border: 1px solid var(--border-light) !important;
+  box-shadow: none !important;
+  cursor: not-allowed !important;
+  opacity: 0.85;
+}
+
 .shortcut-kbd {
   background: rgba(255, 255, 255, 0.2);
   border-radius: 4px;
@@ -7315,4 +7360,28 @@ select {
   .docs-hero-card {
     padding: 18px;
   }
-}
+}
+
+/* ==========================================================================
+   Real-Time Token Streaming Cursor (ChatGPT / Claude Style)
+   ========================================================================== */
+.streaming-cursor {
+  display: inline-block;
+  margin-left: 2px;
+  font-size: 0.95em;
+  line-height: 1;
+  color: var(--accent-blue-light, #3b82f6);
+  vertical-align: baseline;
+  user-select: none;
+  animation: streaming-cursor-blink 0.85s steps(2, start) infinite;
+}
+
+@keyframes streaming-cursor-blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+

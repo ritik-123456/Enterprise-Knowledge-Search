@@ -1,7 +1,9 @@
+import json
 import logging
 import re
 import time
-from typing import List, Optional, Tuple, Dict, Any, Set
+from concurrent.futures import ThreadPoolExecutor
+from typing import List, Optional, Tuple, Dict, Any, Set, Generator
 
 from rank_bm25 import BM25Okapi, BM25Plus
 
@@ -642,28 +644,97 @@ class RAGService:
                 message=f"AI service encountered an unhandled error ({type(e).__name__}): {e}"
             )
 
-    def _answer_query_v2(
+    def _validate_citations(
+        self,
+        answer_content: str,
+        question: str,
+        retrieved_map: Dict[str, Tuple[DocumentChunk, float]]
+    ) -> Tuple[List[CitationSource], bool]:
+        """Validates inline citations against retrieved context and detects ungrounded answers."""
+        raw_cited_ids = extract_cited_chunk_ids(answer_content)
+        valid_citations: List[CitationSource] = []
+        valid_ids_seen = set()
+
+        for cid in raw_cited_ids:
+            if cid in retrieved_map and cid not in valid_ids_seen:
+                valid_ids_seen.add(cid)
+                chunk, v_score = retrieved_map[cid]
+                snippet = build_citation_snippet(
+                    chunk_text=chunk.text,
+                    question=question,
+                    answer=answer_content,
+                    max_chars=300
+                )
+                valid_citations.append(
+                    CitationSource(
+                        chunk_id=chunk.chunk_id,
+                        source_name=chunk.document_name,
+                        page_start=chunk.page_start,
+                        page_end=chunk.page_end,
+                        snippet=snippet,
+                        score=round(v_score, 3),
+                        id=len(valid_citations) + 1,
+                        section_heading=chunk.section_heading
+                    )
+                )
+
+        is_insufficient = (
+            answer_content.strip().lower().startswith("information regarding this topic was not found")
+            or (
+                len(answer_content.strip()) < 180
+                and any(
+                    term in answer_content.lower()
+                    for term in [
+                        "not found in the uploaded documents",
+                        "does not contain sufficient information",
+                        "cannot be determined from the excerpts",
+                        "not mentioned in the provided context"
+                    ]
+                )
+            )
+        )
+
+        # Fallback to top retrieved context chunks if model answered without explicit bracket tags
+        if not valid_citations and not is_insufficient:
+            for cid, (chunk, v_score) in list(retrieved_map.items())[:3]:
+                snippet = build_citation_snippet(
+                    chunk_text=chunk.text,
+                    question=question,
+                    answer=answer_content,
+                    max_chars=300
+                )
+                valid_citations.append(
+                    CitationSource(
+                        chunk_id=chunk.chunk_id,
+                        source_name=chunk.document_name,
+                        page_start=chunk.page_start,
+                        page_end=chunk.page_end,
+                        snippet=snippet,
+                        score=round(v_score, 3),
+                        id=len(valid_citations) + 1,
+                        section_heading=chunk.section_heading
+                    )
+                )
+
+        return valid_citations, is_insufficient
+
+    def _prepare_query_context_v2(
         self,
         question: str,
         user_id: str,
         doc_filter: Optional[List[str]] = None,
-        document_id: Optional[str] = None
-    ) -> AskAIResponse:
+        document_id: Optional[str] = None,
+        model: Optional[str] = None
+    ) -> Tuple[Optional[Dict[str, Any]], Optional[AskAIResponse]]:
         """
-        Improved RAG pipeline (v2):
-        1. Query classification & decomposition into 2-5 standalone sub-questions.
-        2. Corpus-wide hybrid retrieval (Dense Qdrant + BM25 + RRF) with exact filter parity.
-        3. Cross-encoder reranking per sub-question with input length limits.
-        4. Parent deduplication for small-to-big retrieval.
-        5. Guaranteed minimum representation for multi-doc/comparison queries.
-        6. Post-rerank MMR diversity filtering.
-        7. Parent-child context resolution (passing rich parent section to LLM).
-        8. Upgraded generation prompt with comparison tables and explicit sub-question answers.
+        Executes stages 1-5 of the improved RAG pipeline:
+        Query Decomposition -> Batched Parallel Retrieval -> MMR & Context Pruning -> Prompt Prep.
+        Returns (context_dict, None) on success, or (None, failure_or_not_found_response) on failure.
         """
         start_time = time.time()
         active_key = settings.active_api_key
         if not active_key:
-            return self._create_failure_response(
+            return None, self._create_failure_response(
                 question=question,
                 start_time=start_time,
                 message="OpenAI API key is not configured (or GEMINI_API_KEY). Please set in your environment to generate answers."
@@ -680,12 +751,14 @@ class RAGService:
             client = OpenAI(**client_kwargs)
 
             # Determine active model
-            if settings.is_gemini and not ("gemini" in settings.LLM_MODEL.lower()):
+            if model:
+                active_model = model
+            elif settings.is_gemini and not ("gemini" in settings.LLM_MODEL.lower()):
                 active_model = "gemini-flash-lite-latest"
             else:
                 active_model = settings.LLM_MODEL
 
-            # Stage 1: Query Analysis & Decomposition
+            # Stage 1: Query Analysis & Decomposition (with Fast-Path)
             t_decomp_0 = time.time()
             if getattr(settings, "ENABLE_QUERY_DECOMPOSITION", True):
                 analysis = query_decomposition_service.analyze_query(question, client=client, user_id=user_id)
@@ -699,46 +772,64 @@ class RAGService:
             decomp_ms = (time.time() - t_decomp_0) * 1000
             logger.info(f"[Stage: Decomposition] Query='{question}' -> type='{q_type}', sub_qs={sub_qs}, is_multi_doc={is_multi_doc} ({decomp_ms:.1f}ms)")
 
-            # Stage 2: Hybrid Retrieval & Reranking per sub-question
+            # Stage 2: Hybrid Retrieval & Reranking per sub-question (Batched & Parallelized)
             t_retrieval_0 = time.time()
             sub_reranked: List[Tuple[DocumentChunk, float]] = []
 
-            for sub_q in sub_qs:
-                # 1. Qdrant dense vector search
-                dense_cands = vector_store.search(
-                    query=sub_q,
-                    user_id=user_id,
-                    k=settings.RETRIEVE_K,
-                    doc_filter=doc_filter,
-                    document_id=document_id,
-                    min_similarity=settings.MIN_SIMILARITY,
-                    pipeline_version="v2"
-                )
+            # 1. Batch generate embeddings for all sub-questions in a single API call
+            sub_q_embeddings = vector_store.generate_embeddings_batch(sub_qs)
 
-                # 2. Corpus-wide BM25 search with identical pre-filtering
-                if getattr(settings, "ENABLE_HYBRID_BM25", True):
-                    bm25_cands = corpus_bm25_index.search(
+            # 2. Worker for single sub-question retrieval & reranking
+            def _retrieve_and_rerank_sub_q(sub_item: Tuple[str, List[float]]) -> List[Tuple[DocumentChunk, float]]:
+                sub_q, query_vec = sub_item
+                try:
+                    # 1. Qdrant dense vector search using pre-generated embedding
+                    dense_cands = vector_store.search(
+                        query_embedding=query_vec,
                         user_id=user_id,
-                        query=sub_q,
                         k=settings.RETRIEVE_K,
                         doc_filter=doc_filter,
                         document_id=document_id,
+                        min_similarity=settings.MIN_SIMILARITY,
                         pipeline_version="v2"
                     )
-                    fused = compute_rrf_fusion(dense_cands, bm25_cands, k=60.0)
-                else:
-                    fused = dense_cands
 
-                # 3. Cross-Encoder reranking per sub-question (with input length limit)
-                if getattr(settings, "ENABLE_RERANKER", True) and fused:
-                    reranked_pool = cross_encoder_reranker.rerank(
-                        sub_q,
-                        [c for c, _ in fused],
-                        top_n=getattr(settings, "RERANK_TOP_N", 10)
-                    )
-                    sub_reranked.extend(reranked_pool)
-                else:
-                    sub_reranked.extend(fused[:getattr(settings, "RERANK_TOP_N", 10)])
+                    # 2. Corpus-wide BM25 search with identical pre-filtering
+                    if getattr(settings, "ENABLE_HYBRID_BM25", True):
+                        bm25_cands = corpus_bm25_index.search(
+                            user_id=user_id,
+                            query=sub_q,
+                            k=settings.RETRIEVE_K,
+                            doc_filter=doc_filter,
+                            document_id=document_id,
+                            pipeline_version="v2"
+                        )
+                        fused = compute_rrf_fusion(dense_cands, bm25_cands, k=60.0)
+                    else:
+                        fused = dense_cands
+
+                    # 3. Cross-Encoder reranking per sub-question (with input length limit)
+                    if getattr(settings, "ENABLE_RERANKER", True) and fused:
+                        return cross_encoder_reranker.rerank(
+                            sub_q,
+                            [c for c, _ in fused],
+                            top_n=getattr(settings, "RERANK_TOP_N", 10)
+                        )
+                    return fused[:getattr(settings, "RERANK_TOP_N", 10)]
+                except Exception as sub_err:
+                    logger.warning(f"Error during parallel retrieval for sub-question '{sub_q}': {sub_err}")
+                    return []
+
+            # 3. Fast path if only 1 sub-question (no thread overhead), otherwise execute concurrently
+            sub_pairs = list(zip(sub_qs, sub_q_embeddings))
+            if len(sub_pairs) <= 1:
+                if sub_pairs:
+                    sub_reranked.extend(_retrieve_and_rerank_sub_q(sub_pairs[0]))
+            else:
+                max_workers = min(len(sub_pairs), 4)
+                with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                    for pool in executor.map(_retrieve_and_rerank_sub_q, sub_pairs):
+                        sub_reranked.extend(pool)
 
             # Merge and deduplicate candidates across all sub-questions
             seen_cids: Set[str] = set()
@@ -756,34 +847,51 @@ class RAGService:
 
             if not deduped_candidates:
                 logger.info(f"No candidates retrieved for question: '{question}'")
-                return self._create_not_found_response(question, start_time)
+                return None, self._create_not_found_response(question, start_time)
 
-            # Stage 3: Multi-Document Balance (guaranteed minimum per document)
+            # Stage 3: Multi-Document Balance & Context Pruning
             t_mmr_0 = time.time()
             is_comp_or_multi = (
                 is_multi_doc
                 or q_type in ("comparison", "multi_document")
                 or any(term in question.lower() for term in ["compare", "versus", " vs ", "difference", "contrasting"])
             )
+
+            # Step 2: Dynamic Context Pruning based on Query Complexity
+            is_complex_query = (
+                is_comp_or_multi
+                or q_type in ("comparison", "multi_hop", "multi_section", "multi_document")
+                or len(sub_qs) > 1
+            )
+            target_top_k = settings.TOP_K_CHUNKS if is_complex_query else min(getattr(settings, "SIMPLE_TOP_K_CHUNKS", 4), settings.TOP_K_CHUNKS)
+
             if getattr(settings, "ENABLE_MULTI_DOC_BALANCE", True) and is_comp_or_multi:
                 balanced = apply_multi_doc_balance(
                     deduped_candidates,
                     min_per_doc=getattr(settings, "MULTI_DOC_MIN_PER_DOC", 2),
-                    top_n=settings.TOP_K_CHUNKS * 2
+                    top_n=target_top_k * 2
                 )
             else:
                 balanced = deduped_candidates
 
             # Stage 4: Post-Rerank MMR Diversity
-            if getattr(settings, "ENABLE_DIVERSITY_MMR", True) and len(balanced) > settings.TOP_K_CHUNKS:
+            if getattr(settings, "ENABLE_DIVERSITY_MMR", True) and len(balanced) > target_top_k:
                 final_chunks = apply_mmr_diversity(
                     balanced,
-                    top_n=min(len(balanced), max(settings.TOP_K_CHUNKS, 8)),
+                    top_n=min(len(balanced), target_top_k),
                     lambda_param=0.7
                 )
             else:
-                final_chunks = balanced[:settings.TOP_K_CHUNKS]
+                final_chunks = balanced[:target_top_k]
+
+            # Relative score cutoff for simple queries to eliminate noisy trailing context
+            if not is_complex_query and len(final_chunks) > 1:
+                top_v = final_chunks[0][1]
+                if top_v > 0.3:
+                    final_chunks = [(c, s) for c, s in final_chunks if s >= top_v * 0.35]
+
             mmr_ms = (time.time() - t_mmr_0) * 1000
+            logger.info(f"[Context Pruning] Allocated {len(final_chunks)} chunks for LLM context (target_top_k={target_top_k}, complex={is_complex_query})")
 
             retrieved_map = {chunk.chunk_id: (chunk, score) for chunk, score in final_chunks}
             retrieved_chunks = [chunk for chunk, _ in final_chunks]
@@ -798,7 +906,6 @@ class RAGService:
             for chunk, v_score in final_chunks:
                 page_info = f"Page {chunk.page_start}" if chunk.page_start == chunk.page_end else f"Pages {chunk.page_start}-{chunk.page_end}"
                 heading_info = f" | Section: {chunk.section_heading}" if chunk.section_heading else ""
-                # Use parent section text if parent-child retrieval is enabled
                 body_text = chunk.parent_text if (getattr(settings, "ENABLE_PARENT_CHILD", True) and chunk.parent_text) else chunk.text
                 context_blocks.append(
                     f"[Chunk ID: {chunk.chunk_id} | Document: {chunk.document_name} | {page_info}{heading_info}]\n"
@@ -806,8 +913,7 @@ class RAGService:
                 )
             context_text = "\n\n".join(context_blocks)
 
-            # Stage 6: Generation Prompt
-            t_gen_0 = time.time()
+            # Stage 6 Prompt assembly
             system_prompt = (
                 "You are an enterprise AI knowledge assistant. Answer the user's question "
                 "strictly and factually based ONLY on the provided context excerpts.\n\n"
@@ -836,6 +942,54 @@ class RAGService:
             if is_reasoning_model(active_model):
                 create_kwargs["max_completion_tokens"] = settings.LLM_MAX_TOKENS
 
+            return {
+                "client": client,
+                "create_kwargs": create_kwargs,
+                "retrieved_map": retrieved_map,
+                "retrieved_chunks": retrieved_chunks,
+                "retrieval_strength": retrieval_strength,
+                "decomp_ms": decomp_ms,
+                "retrieval_ms": retrieval_ms,
+                "mmr_ms": mmr_ms,
+                "start_time": start_time
+            }, None
+
+        except Exception as e:
+            logger.error(f"Error preparing query context: {e}", exc_info=True)
+            return None, self._create_failure_response(
+                question=question,
+                start_time=start_time,
+                message=f"AI service encountered an error preparing query ({type(e).__name__}): {e}"
+            )
+
+    def _answer_query_v2(
+        self,
+        question: str,
+        user_id: str,
+        doc_filter: Optional[List[str]] = None,
+        document_id: Optional[str] = None,
+        model: Optional[str] = None
+    ) -> AskAIResponse:
+        """
+        Improved RAG pipeline (v2):
+        Executes query stages and completes synchronous non-streaming answer synthesis.
+        """
+        ctx, err_resp = self._prepare_query_context_v2(question, user_id, doc_filter, document_id, model=model)
+        if err_resp is not None:
+            return err_resp
+
+        client = ctx["client"]
+        create_kwargs = ctx["create_kwargs"]
+        retrieved_map = ctx["retrieved_map"]
+        retrieved_chunks = ctx["retrieved_chunks"]
+        retrieval_strength = ctx["retrieval_strength"]
+        decomp_ms = ctx["decomp_ms"]
+        retrieval_ms = ctx["retrieval_ms"]
+        mmr_ms = ctx["mmr_ms"]
+        start_time = ctx["start_time"]
+
+        try:
+            t_gen_0 = time.time()
             answer_content = self._call_openai_with_retries(client, create_kwargs)
             gen_ms = (time.time() - t_gen_0) * 1000
             total_ms = (time.time() - start_time) * 1000
@@ -848,78 +1002,11 @@ class RAGService:
                     message="AI service encountered an error or timed out. Please try again later."
                 )
 
-            # Strict Citation Validation
-            raw_cited_ids = extract_cited_chunk_ids(answer_content)
-            valid_citations: List[CitationSource] = []
-            valid_ids_seen = set()
-
-            for cid in raw_cited_ids:
-                if cid in retrieved_map and cid not in valid_ids_seen:
-                    valid_ids_seen.add(cid)
-                    chunk, v_score = retrieved_map[cid]
-                    snippet = build_citation_snippet(
-                        chunk_text=chunk.text,
-                        question=question,
-                        answer=answer_content,
-                        max_chars=300
-                    )
-                    valid_citations.append(
-                        CitationSource(
-                            chunk_id=chunk.chunk_id,
-                            source_name=chunk.document_name,
-                            page_start=chunk.page_start,
-                            page_end=chunk.page_end,
-                            snippet=snippet,
-                            score=round(v_score, 3),
-                            id=len(valid_citations) + 1,
-                            section_heading=chunk.section_heading
-                        )
-                    )
-
-            is_insufficient = (
-                answer_content.strip().lower().startswith("information regarding this topic was not found")
-                or (
-                    len(answer_content.strip()) < 180
-                    and any(
-                        term in answer_content.lower()
-                        for term in [
-                            "not found in the uploaded documents",
-                            "does not contain sufficient information",
-                            "cannot be determined from the excerpts",
-                            "not mentioned in the provided context"
-                        ]
-                    )
-                )
-            )
-
-            # If no inline citations but the model answered from context without declaring insufficient,
-            # attribute citations to the top retrieved context chunks that match answer content
-            if not valid_citations and not is_insufficient:
-                for cid, (chunk, v_score) in list(retrieved_map.items())[:3]:
-                    snippet = build_citation_snippet(
-                        chunk_text=chunk.text,
-                        question=question,
-                        answer=answer_content,
-                        max_chars=300
-                    )
-                    valid_citations.append(
-                        CitationSource(
-                            chunk_id=chunk.chunk_id,
-                            source_name=chunk.document_name,
-                            page_start=chunk.page_start,
-                            page_end=chunk.page_end,
-                            snippet=snippet,
-                            score=round(v_score, 3),
-                            id=len(valid_citations) + 1,
-                            section_heading=chunk.section_heading
-                        )
-                    )
-
+            valid_citations, is_insufficient = self._validate_citations(answer_content, question, retrieved_map)
             if not valid_citations or is_insufficient:
                 logger.info("No valid citations found in answer or answer declared insufficient. Setting answerable=False.")
                 return self._create_not_found_response(question, start_time)
 
-            # Parse lead and key bullet points
             lines = [l.strip() for l in answer_content.split("\n") if l.strip()]
             bullet_lines = [l for l in lines if l.startswith(("- ", "* ", "• "))]
 
@@ -959,13 +1046,103 @@ class RAGService:
                 message=f"AI service encountered an unhandled error ({type(e).__name__}): {e}"
             )
 
+    def answer_query_stream(
+        self,
+        question: str,
+        user_id: str,
+        doc_filter: Optional[List[str]] = None,
+        document_id: Optional[str] = None,
+        model: Optional[str] = None
+    ) -> Generator[str, None, None]:
+        """
+        Server-Sent Events (SSE) streaming generator for real-time token delivery to the client.
+        Yields 'data: {"type": "token", "token": "..."}' as tokens generate.
+        Yields 'data: {"type": "done", ...}' upon completion with validated citations and metadata.
+        """
+        start_time = time.time()
+        ctx, err_resp = self._prepare_query_context_v2(question, user_id, doc_filter, document_id, model=model)
+        if err_resp is not None:
+            data_dict = {
+                "type": "done",
+                "question": question,
+                "answerable": err_resp.answerable,
+                "answer": err_resp.answer,
+                "lead": err_resp.lead,
+                "key_points": err_resp.key_points or [],
+                "citations": [],
+                "sources": [],
+                "sources_used": 0,
+                "confidence": getattr(err_resp, "confidence", "0%"),
+                "response_time": f"{round(time.time() - start_time, 2)}s"
+            }
+            yield f"data: {json.dumps(data_dict)}\n\n"
+            return
+
+        client = ctx["client"]
+        create_kwargs = ctx["create_kwargs"]
+        retrieved_map = ctx["retrieved_map"]
+        retrieval_strength = ctx["retrieval_strength"]
+
+        try:
+            stream_kwargs = dict(create_kwargs)
+            stream_kwargs["stream"] = True
+
+            stream_resp = client.chat.completions.create(**stream_kwargs)
+            full_chunks = []
+
+            for chunk_item in stream_resp:
+                if chunk_item.choices and chunk_item.choices[0].delta and chunk_item.choices[0].delta.content:
+                    delta_text = chunk_item.choices[0].delta.content
+                    full_chunks.append(delta_text)
+                    yield f"data: {json.dumps({'type': 'token', 'token': delta_text})}\n\n"
+
+            raw_answer = "".join(full_chunks)
+
+            valid_citations, is_insufficient = self._validate_citations(raw_answer, question, retrieved_map)
+
+            lines = [l.strip() for l in raw_answer.split("\n") if l.strip()]
+            bullet_lines = [l for l in lines if l.startswith(("- ", "* ", "• "))]
+            if bullet_lines:
+                first_bullet_idx = next(i for i, l in enumerate(lines) if l.startswith(("- ", "* ", "• ")))
+                lead_parts = lines[:first_bullet_idx]
+                lead = " ".join(lead_parts) if lead_parts else lines[0]
+                key_points = [re.sub(r"^[-*•]\s*", "", l).strip() for l in bullet_lines]
+            else:
+                lead = raw_answer
+                key_points = []
+
+            clean_answer = strip_chunk_id_citations(raw_answer)
+            clean_lead = strip_chunk_id_citations(lead)
+            clean_key_points = [strip_chunk_id_citations(kp) for kp in key_points if strip_chunk_id_citations(kp)]
+            measured_time = f"{round(time.time() - start_time, 2)}s"
+
+            done_payload = {
+                "type": "done",
+                "question": question,
+                "answerable": not is_insufficient and bool(valid_citations),
+                "answer": clean_answer,
+                "lead": clean_lead,
+                "key_points": clean_key_points,
+                "sources": [c.model_dump() for c in valid_citations],
+                "citations": [c.model_dump() for c in valid_citations],
+                "sources_used": len(valid_citations),
+                "confidence": retrieval_strength,
+                "response_time": measured_time
+            }
+            yield f"data: {json.dumps(done_payload)}\n\n"
+
+        except Exception as e:
+            logger.error(f"Streaming generation error: {e}", exc_info=True)
+            yield f"data: {json.dumps({'type': 'error', 'error': f'AI streaming error: {e}'})}\n\n"
+
     def answer_query(
         self,
         question: str,
         user_id: str,
         doc_filter: Optional[List[str]] = None,
         document_id: Optional[str] = None,
-        pipeline_version: Optional[str] = None
+        pipeline_version: Optional[str] = None,
+        model: Optional[str] = None
     ) -> AskAIResponse:
         """
         Public answer endpoint routing between legacy baseline ('v1')
@@ -978,7 +1155,7 @@ class RAGService:
         active_ver = pipeline_version or getattr(settings, "PIPELINE_VERSION", "v2")
         if active_ver == "v1":
             return self._answer_query_legacy(question, user_id=user_id, doc_filter=doc_filter, document_id=document_id)
-        return self._answer_query_v2(question, user_id=user_id, doc_filter=doc_filter, document_id=document_id)
+        return self._answer_query_v2(question, user_id=user_id, doc_filter=doc_filter, document_id=document_id, model=model)
 
 
 rag_service = RAGService()

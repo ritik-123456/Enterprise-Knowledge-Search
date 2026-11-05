@@ -38,6 +38,46 @@ JSON schema:
 
 Question: {question}"""
 
+COMPLEX_QUERY_PATTERNS = [
+    # 1. Comparison keywords
+    r"\b(?:compare|comparison|versus|vs\.?|difference|differences|contrasting|diff|tradeoffs?|pros and cons|better than|alternative to)\b",
+    # 2. 'Between X and Y' comparison structure
+    r"\bbetween\b.+\band\b",
+    # 3. Cross-document / multi-policy references
+    r"\b(?:across|in)\s+(?:both|all|multiple)\s+(?:documents?|pdfs?|policies|standards?)\b",
+    r"\b(?:handbook|policy|standard)\b.+\b(?:handbook|policy|standard)\b",
+    # 4. Multi-clause interrogatives (e.g. "... and what is...", ", which team...", "; how do I...")
+    r"[,;]\s*(?:and\s+)?(?:what|how|which|who|where|when|why)\b",
+    r"\band\s+(?:what|how|which|who|where|when|why)\b",
+]
+
+
+def is_likely_complex(question: str) -> bool:
+    """
+    Fast-path heuristic rule to detect if a question requires decomposition.
+    Returns True if question shows clear patterns of comparison, multi-hop, or multi-part queries.
+    Returns False for standard single-fact lookup queries, bypassing the LLM planner (< 1ms).
+    """
+    q = question.strip()
+    if not q:
+        return False
+
+    # If query contains multiple question marks (e.g. "What is X? And what is Y?"), it's multi-part
+    if q.count("?") >= 2:
+        return True
+
+    q_lower = q.lower()
+    for pattern in COMPLEX_QUERY_PATTERNS:
+        if re.search(pattern, q_lower):
+            return True
+
+    # If long query (> 25 words) with conjunctions, it may contain multiple clauses
+    words = q.split()
+    if len(words) > 25 and ("," in q or " and " in q_lower or ";" in q):
+        return True
+
+    return False
+
 
 class QueryDecompositionService:
     def __init__(self):
@@ -84,6 +124,14 @@ class QueryDecompositionService:
         cache_key = f"{user_id}:{q_clean}" if user_id else q_clean
         if cache_key in self._llm_cache:
             return self._llm_cache[cache_key]
+
+        # Fast-Path Rule Check (Bypass LLM planner for single-fact/simple queries)
+        if not is_likely_complex(question):
+            logger.info(f"[Fast-Path] Query '{question[:60]}' identified as simple. Bypassing LLM planner (<1ms).")
+            self._llm_cache[cache_key] = fallback
+            return fallback
+
+        logger.info(f"[Query Planner] Complex query detected for '{question[:60]}'. Invoking LLM decomposition...")
 
         if not client:
             try:

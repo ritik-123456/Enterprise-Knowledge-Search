@@ -18,7 +18,8 @@ import {
   Filter,
   RefreshCw,
   FolderOpen,
-  ChevronDown
+  ChevronDown,
+  Square
 } from 'lucide-react'
 import ClaudeMarkdown, { stripChunkIdCitations } from '../components/ClaudeMarkdown'
 import { useChat } from '../context/ChatContext'
@@ -107,7 +108,13 @@ export default function AskAI() {
   const [fileError, setFileError] = useState('')
   const activePollersRef = useRef(new Map())
   const docsAbortControllerRef = useRef(null)
+  const askAbortControllerRef = useRef(null)
   const currentUserIdRef = useRef(user?.id)
+
+  // Track if any PDF is currently uploading or processing in the background
+  const isUploadingOrProcessing = uploads.some(
+    u => u.status === 'uploading' || u.status === 'processing'
+  )
 
   useEffect(() => {
     currentUserIdRef.current = user?.id
@@ -196,6 +203,10 @@ export default function AskAI() {
       docsAbortControllerRef.current.abort()
       docsAbortControllerRef.current = null
     }
+    if (askAbortControllerRef.current) {
+      askAbortControllerRef.current.abort()
+      askAbortControllerRef.current = null
+    }
 
     activePollersRef.current.forEach((intervalId) => clearInterval(intervalId))
     activePollersRef.current.clear()
@@ -227,6 +238,9 @@ export default function AskAI() {
       if (docsAbortControllerRef.current) {
         docsAbortControllerRef.current.abort()
       }
+      if (askAbortControllerRef.current) {
+        askAbortControllerRef.current.abort()
+      }
       activePollersRef.current.forEach((intervalId) => clearInterval(intervalId))
       activePollersRef.current.clear()
     }
@@ -239,6 +253,10 @@ export default function AskAI() {
       if (docsAbortControllerRef.current) {
         docsAbortControllerRef.current.abort()
         docsAbortControllerRef.current = null
+      }
+      if (askAbortControllerRef.current) {
+        askAbortControllerRef.current.abort()
+        askAbortControllerRef.current = null
       }
       activePollersRef.current.forEach((intervalId) => clearInterval(intervalId))
       activePollersRef.current.clear()
@@ -560,7 +578,32 @@ export default function AskAI() {
   // -------------------------------------------------------------
   // 5. QUERY RAG PIPELINE (POST /api/documents/ask)
   // -------------------------------------------------------------
+  const handleStopExecution = useCallback(() => {
+    if (askAbortControllerRef.current) {
+      askAbortControllerRef.current.abort()
+      askAbortControllerRef.current = null
+    }
+    setIsGenerating(false)
+    setThreadMessages(prev =>
+      prev.map(m =>
+        m.isGenerating
+          ? {
+              ...m,
+              isGenerating: false,
+              data: m.data?.answer ? m.data : null,
+              error: 'Generation stopped by user.'
+            }
+          : m
+      )
+    )
+  }, [])
+
   const handleAskQuestion = async (queryOverride) => {
+    // Pause asking while documents are actively uploading or processing
+    if (isUploadingOrProcessing) {
+      return
+    }
+
     const questionText = (queryOverride || inputVal).trim()
     if (!questionText) return
 
@@ -568,6 +611,12 @@ export default function AskAI() {
       openLoginModal("Sign in with Google to upload and search your private documents.")
       return
     }
+
+    if (askAbortControllerRef.current) {
+      askAbortControllerRef.current.abort()
+    }
+    const controller = new AbortController()
+    askAbortControllerRef.current = controller
 
     const userMsgId = `u-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`
     const assistantMsgId = `a-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`
@@ -605,11 +654,17 @@ export default function AskAI() {
         payload.document_id = selectedDocId
       }
 
-      const res = await fetch(`${API_BASE}/api/documents/ask`, {
+      // Stream tokens word-by-word via Server-Sent Events (SSE)
+      const res = await fetch(`${API_BASE}/api/documents/ask?stream=true`, {
         method: 'POST',
         headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        signal: controller.signal
       })
+
+      if (controller.signal.aborted) {
+        return
+      }
 
       if (res.status === 401) {
         handleUnauthorized?.()
@@ -618,8 +673,173 @@ export default function AskAI() {
         return
       }
 
-      if (res.ok) {
+      if (res.status === 404) {
+        const err = 'The specified document ID was not found in the vector store.'
+        setSearchError(err)
+        setThreadMessages(prev =>
+          prev.map(m =>
+            m.id === assistantMsgId
+              ? { ...m, isGenerating: false, data: null, error: err }
+              : m
+          )
+        )
+        return
+      }
+
+      if (!res.ok) {
+        let detail = `Query failed with status ${res.status}`
+        try {
+          const errData = await res.json()
+          if (errData.detail) detail = errData.detail
+        } catch {
+          // Ignore
+        }
+        setSearchError(detail)
+        setThreadMessages(prev =>
+          prev.map(m =>
+            m.id === assistantMsgId
+              ? { ...m, isGenerating: false, data: null, error: detail }
+              : m
+          )
+        )
+        return
+      }
+
+      // If response body is a readable stream, consume SSE tokens
+      if (res.body && res.body.getReader) {
+        const reader = res.body.getReader()
+        const decoder = new TextDecoder('utf-8')
+        let buffer = ''
+        let accumulatedRawAnswer = ''
+        let finalDoneData = null
+        let streamError = null
+
+        const processLine = (line) => {
+          const trimmed = line.trim()
+          if (!trimmed || !trimmed.startsWith('data:')) return
+          const jsonStr = trimmed.replace(/^data:\s*/, '').trim()
+          if (!jsonStr) return
+
+          try {
+            const eventData = JSON.parse(jsonStr)
+            if (eventData.type === 'token') {
+              accumulatedRawAnswer += eventData.token
+              const cleanLiveText = stripChunkIdCitations(accumulatedRawAnswer)
+              setThreadMessages(prev =>
+                prev.map(m =>
+                  m.id === assistantMsgId
+                    ? {
+                        ...m,
+                        isGenerating: true,
+                        data: {
+                          answerable: true,
+                          answer: cleanLiveText,
+                          lead: cleanLiveText,
+                          keyPoints: [],
+                          stats: null,
+                          sources: []
+                        }
+                      }
+                    : m
+                )
+              )
+            } else if (eventData.type === 'done') {
+              finalDoneData = eventData
+            } else if (eventData.type === 'error') {
+              streamError = eventData.error || 'AI generation failed.'
+            }
+          } catch (e) {
+            console.warn('Failed to parse SSE line:', jsonStr, e)
+          }
+        }
+
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          buffer += decoder.decode(value, { stream: true })
+          const lines = buffer.split('\n')
+          buffer = lines.pop() || ''
+          for (const line of lines) {
+            processLine(line)
+          }
+        }
+
+        if (buffer.trim()) {
+          processLine(buffer)
+        }
+
+        if (controller.signal.aborted) return
+
+        if (streamError) {
+          setSearchError(streamError)
+          setThreadMessages(prev =>
+            prev.map(m =>
+              m.id === assistantMsgId
+                ? { ...m, isGenerating: false, data: null, error: streamError }
+                : m
+            )
+          )
+          return
+        }
+
+        const sourceData = finalDoneData || {
+          answerable: true,
+          answer: accumulatedRawAnswer,
+          lead: accumulatedRawAnswer,
+          key_points: [],
+          sources: [],
+          response_time: '0.0s'
+        }
+
+        const cleanAnswer = stripChunkIdCitations(sourceData.answer || accumulatedRawAnswer)
+        const cleanLead = stripChunkIdCitations(sourceData.lead || cleanAnswer)
+        const cleanKeyPoints = (sourceData.key_points || []).map(p => stripChunkIdCitations(p))
+
+        const parsed = {
+          answerable: sourceData.answerable !== false,
+          answer: cleanAnswer,
+          lead: cleanLead,
+          keyPoints: cleanKeyPoints,
+          stats: {
+            responseTime: formatResponseTime(sourceData.response_time),
+            sourcesUsed: sourceData.sources_used || (sourceData.sources ? sourceData.sources.length : 0),
+            retrievalStrength: getRetrievalStrengthLabel(sourceData.confidence)
+          },
+          sources: (sourceData.sources || []).map(s => ({
+            id: s.id,
+            source_name: s.source_name || 'Document',
+            page: s.page_display || (s.page_start && s.page_end && s.page_start !== s.page_end ? `Pages ${s.page_start}-${s.page_end}` : `Page ${s.page_start || s.page || 1}`),
+            page_start: s.page_start,
+            page_end: s.page_end,
+            snippet: s.snippet
+          }))
+        }
+
+        setAnswerData(parsed)
+        setThreadMessages(prev => {
+          const updated = prev.map(m =>
+            m.id === assistantMsgId
+              ? { ...m, isGenerating: false, data: parsed, error: null }
+              : m
+          )
+          const firstQuestion = updated.find(m => m.role === 'user')?.text || questionText
+          const assignedId = currentChatId || `chat_${Date.now()}`
+          if (!currentChatId) setCurrentChatId(assignedId)
+
+          saveChat({
+            id: assignedId,
+            title: firstQuestion.slice(0, 100),
+            messages: updated
+          })
+
+          return updated
+        })
+        return
+      } else {
+        // Fallback for non-streaming response body
         const data = await res.json()
+        if (controller.signal.aborted) return
+
         const cleanAnswer = stripChunkIdCitations(data.answer)
         const cleanLead = stripChunkIdCitations(data.lead)
         const cleanKeyPoints = (data.key_points || []).map(p => stripChunkIdCitations(p))
@@ -665,35 +885,10 @@ export default function AskAI() {
         })
         return
       }
-
-      if (res.status === 404) {
-        const err = 'The specified document ID was not found in the vector store.'
-        setSearchError(err)
-        setThreadMessages(prev =>
-          prev.map(m =>
-            m.id === assistantMsgId
-              ? { ...m, isGenerating: false, data: null, error: err }
-              : m
-          )
-        )
-      } else {
-        let detail = `Query failed with status ${res.status}`
-        try {
-          const errData = await res.json()
-          if (errData.detail) detail = errData.detail
-        } catch {
-          // Ignore
-        }
-        setSearchError(detail)
-        setThreadMessages(prev =>
-          prev.map(m =>
-            m.id === assistantMsgId
-              ? { ...m, isGenerating: false, data: null, error: detail }
-              : m
-          )
-        )
+    } catch (err) {
+      if (err?.name === 'AbortError' || controller.signal.aborted) {
+        return
       }
-    } catch {
       const netErr = 'Unable to connect to the knowledge backend at http://localhost:8000.'
       setSearchError(netErr)
       setThreadMessages(prev =>
@@ -704,6 +899,9 @@ export default function AskAI() {
         )
       )
     } finally {
+      if (askAbortControllerRef.current === controller) {
+        askAbortControllerRef.current = null
+      }
       setIsGenerating(false)
     }
   }
@@ -711,6 +909,7 @@ export default function AskAI() {
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
+      if (isGenerating || isUploadingOrProcessing) return
       handleAskQuestion()
     }
   }
@@ -983,13 +1182,15 @@ export default function AskAI() {
         <textarea
           className="search-textarea"
           placeholder={
-            isBottomDock
-              ? activeFilteredDoc
-                ? `Ask follow-up question on "${activeFilteredDoc.name}"...`
-                : 'Ask a follow-up question or search across documents...'
-              : activeFilteredDoc
-                ? `Ask a question specifically about "${activeFilteredDoc.name}"...`
-                : 'Ask a question across indexed enterprise documents...'
+            isUploadingOrProcessing
+              ? 'Document is indexing... Ask AI is paused until processing completes'
+              : isBottomDock
+                ? activeFilteredDoc
+                  ? `Ask follow-up question on "${activeFilteredDoc.name}"...`
+                  : 'Ask a follow-up question or search across documents...'
+                : activeFilteredDoc
+                  ? `Ask a question specifically about "${activeFilteredDoc.name}"...`
+                  : 'Ask a question across indexed enterprise documents...'
           }
           value={inputVal}
           onChange={(e) => setInputVal(e.target.value)}
@@ -997,6 +1198,7 @@ export default function AskAI() {
           onFocus={triggerAiGlow}
           rows={isBottomDock ? 2 : 2}
           autoFocus={!isBottomDock}
+          disabled={isUploadingOrProcessing}
         />
 
         <div className="search-actions-bar">
@@ -1036,16 +1238,38 @@ export default function AskAI() {
             </button>
           </div>
 
-          <button
-            className="ask-submit-btn"
-            onClick={() => handleAskQuestion()}
-            disabled={isGenerating || !inputVal.trim()}
-            type="button"
-          >
-            <Sparkles size={15} />
-            <span>Ask AI</span>
-            <span className="shortcut-kbd">⌘↵</span>
-          </button>
+          {isGenerating ? (
+            <button
+              className="ask-submit-btn stop-execution-btn"
+              onClick={handleStopExecution}
+              type="button"
+              title="Stop execution"
+            >
+              <Square size={11} fill="currentColor" />
+              <span>Stop</span>
+            </button>
+          ) : isUploadingOrProcessing ? (
+            <button
+              className="ask-submit-btn is-upload-paused"
+              disabled={true}
+              type="button"
+              title="Document is being indexed. Ask AI is paused until ready."
+            >
+              <Loader2 size={13} className="spin-icon" />
+              <span>Processing PDF...</span>
+            </button>
+          ) : (
+            <button
+              className="ask-submit-btn"
+              onClick={() => handleAskQuestion()}
+              disabled={!inputVal.trim()}
+              type="button"
+            >
+              <Sparkles size={15} />
+              <span>Ask AI</span>
+              <span className="shortcut-kbd">⌘↵</span>
+            </button>
+          )}
         </div>
       </section>
     </div>
@@ -1078,7 +1302,7 @@ export default function AskAI() {
       <div key={msg.id} className="claude-assistant-message-row">
         <div className="claude-assistant-container">
           {/* Subtle Stats Meta (Enterprise AI logo and text completely removed) */}
-          {msg.data?.stats && (
+          {!msg.isGenerating && msg.data?.stats && (
             <div className="claude-assistant-header" style={{ justifyContent: 'flex-end', marginBottom: '4px' }}>
               <span className="claude-assistant-meta">
                 {msg.data.stats.responseTime} • {msg.data.stats.sourcesUsed} source{msg.data.stats.sourcesUsed === 1 ? '' : 's'} verified
@@ -1086,8 +1310,8 @@ export default function AskAI() {
             </div>
           )}
 
-          {/* 1. Loading State: Three Waving Dots */}
-          {msg.isGenerating && (
+          {/* 1. Loading State: Three Waving Dots (only while waiting for initial tokens) */}
+          {msg.isGenerating && !msg.data?.answer && (
             <div className="chat-waving-dots-container" aria-label="Loading response...">
               <div className="chat-waving-dots">
                 <span className="chat-dot dot-1" />
@@ -1097,24 +1321,46 @@ export default function AskAI() {
             </div>
           )}
 
-          {/* 2. Error State */}
+          {/* 2. Error State / Stopped State */}
           {msg.error && !msg.isGenerating && (
-            <div className="claude-conversational-notice">
-              <div className="claude-notice-text" style={{ color: '#f87171' }}>
-                <AlertCircle size={15} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'text-bottom' }} />
-                {msg.error}
-              </div>
-              <div className="claude-notice-actions">
-                <button
-                  type="button"
-                  className="claude-ghost-btn"
-                  onClick={() => handleAskQuestion(currentQuestion)}
+            <>
+              {msg.data?.answer && (
+                <ClaudeMarkdown
+                  content={msg.data.answer}
+                  isStreaming={false}
+                  onCitationClick={(citNum) => {
+                    setActiveSources(prev => ({
+                      ...prev,
+                      [msg.id]: prev[msg.id] === citNum ? null : citNum
+                    }))
+                  }}
+                />
+              )}
+              <div className="claude-conversational-notice" style={msg.data?.answer ? { marginTop: '12px' } : {}}>
+                <div
+                  className="claude-notice-text"
+                  style={{ color: msg.error === 'Generation stopped by user.' ? 'var(--text-muted)' : '#f87171' }}
                 >
-                  <RotateCcw size={13} />
-                  <span>Retry Question</span>
-                </button>
+                  {msg.error === 'Generation stopped by user.' ? (
+                    <Square size={13} fill="currentColor" style={{ display: 'inline', marginRight: '6px', verticalAlign: 'text-bottom' }} />
+                  ) : (
+                    <AlertCircle size={15} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'text-bottom' }} />
+                  )}
+                  {msg.error}
+                </div>
+                <div className="claude-notice-actions">
+                  <button
+                    type="button"
+                    className="claude-ghost-btn"
+                    onClick={() => handleAskQuestion(currentQuestion)}
+                    disabled={isUploadingOrProcessing}
+                  >
+                    <RotateCcw size={13} />
+                    <span>Retry Question</span>
+                  </button>
+                </div>
               </div>
-            </div>
+            </>
           )}
 
           {/* 3. Not Found / Unanswerable (Claude-Style Conversational Response) */}
@@ -1182,12 +1428,14 @@ export default function AskAI() {
             </div>
           )}
 
-          {/* 4. Verified Grounded Answer (Claude-Style Markdown Prose, Tables & Citations) */}
-          {!msg.isGenerating && !msg.error && msg.data && msg.data.answerable && (
+          {/* 4. Verified Grounded Answer or Active Streaming */}
+          {((!msg.isGenerating && !msg.error && msg.data && msg.data.answerable) ||
+            (msg.isGenerating && msg.data?.answer)) && (
             <>
-              {/* Rich Markdown Answer */}
+              {/* Rich Markdown Answer with real-time streaming cursor */}
               <ClaudeMarkdown
                 content={msg.data.answer || msg.data.lead}
+                isStreaming={msg.isGenerating}
                 onCitationClick={(citNum) => {
                   setActiveSources(prev => ({
                     ...prev,
@@ -1205,8 +1453,8 @@ export default function AskAI() {
                 </ul>
               )}
 
-              {/* Sources Pills & Collapsible Drawer (Claude-Style) */}
-              {msg.data.sources && msg.data.sources.length > 0 && (
+              {/* Sources Pills & Collapsible Drawer (Claude-Style) - only when generation is completed */}
+              {!msg.isGenerating && msg.data.sources && msg.data.sources.length > 0 && (
                 <div className="claude-sources-section">
                   <div className="claude-sources-top">
                     <span className="claude-sources-title">
@@ -1275,8 +1523,9 @@ export default function AskAI() {
                 </div>
               )}
 
-              {/* Minimalist Ghost Action Bar at Message Bottom */}
-              <div className="claude-actions-toolbar">
+              {/* Minimalist Ghost Action Bar at Message Bottom - only when generation is completed */}
+              {!msg.isGenerating && (
+                <div className="claude-actions-toolbar">
                 <button
                   type="button"
                   className="claude-ghost-btn"
@@ -1345,8 +1594,9 @@ export default function AskAI() {
                   <span>{isBookmarked ? 'Saved' : 'Bookmark'}</span>
                 </button>
               </div>
-            </>
-          )}
+            )}
+          </>
+        )}
         </div>
       </div>
     )

@@ -91,8 +91,10 @@ export function renderInlineContent(text, onCitationClick) {
 /**
  * Parses markdown text into structured blocks (Paragraphs, Headings, Tables, Lists, Code blocks).
  */
-export default function ClaudeMarkdown({ content, onCitationClick }) {
-  if (!content) return null
+export default function ClaudeMarkdown({ content, onCitationClick, isStreaming = false }) {
+  if (!content) {
+    return isStreaming ? <span className="streaming-cursor">▍</span> : null
+  }
 
   // Strip raw chunk ID citations before parsing
   const cleanedContent = stripChunkIdCitations(content)
@@ -261,93 +263,116 @@ export default function ClaudeMarkdown({ content, onCitationClick }) {
   return (
     <div className="claude-rendered-markdown">
       {blocks.map((block, idx) => {
+        const isLast = isStreaming && idx === blocks.length - 1
         switch (block.type) {
           case 'h1':
             return (
               <h1 key={idx} className="claude-heading-1">
                 {renderInlineContent(block.text, onCitationClick)}
+                {isLast && <span className="streaming-cursor">▍</span>}
               </h1>
             )
           case 'h2':
             return (
               <h2 key={idx} className="claude-heading-2">
                 {renderInlineContent(block.text, onCitationClick)}
+                {isLast && <span className="streaming-cursor">▍</span>}
               </h2>
             )
           case 'h3':
             return (
               <h3 key={idx} className="claude-heading-3">
                 {renderInlineContent(block.text, onCitationClick)}
+                {isLast && <span className="streaming-cursor">▍</span>}
               </h3>
             )
           case 'paragraph':
             return (
               <p key={idx} className="claude-prose-p">
                 {renderInlineContent(block.text, onCitationClick)}
+                {isLast && <span className="streaming-cursor">▍</span>}
               </p>
             )
           case 'ul':
             return (
               <ul key={idx} className="claude-prose-ul">
-                {block.items.map((item, itemIdx) => (
-                  <li key={itemIdx} className="claude-prose-li">
-                    {renderInlineContent(item, onCitationClick)}
-                  </li>
-                ))}
+                {block.items.map((item, itemIdx) => {
+                  const isLastItem = isLast && itemIdx === block.items.length - 1
+                  return (
+                    <li key={itemIdx} className="claude-prose-li">
+                      {renderInlineContent(item, onCitationClick)}
+                      {isLastItem && <span className="streaming-cursor">▍</span>}
+                    </li>
+                  )
+                })}
               </ul>
             )
           case 'ol':
             return (
               <ol key={idx} className="claude-prose-ol">
-                {block.items.map((item, itemIdx) => (
-                  <li key={itemIdx} className="claude-prose-li">
-                    {renderInlineContent(item, onCitationClick)}
-                  </li>
-                ))}
+                {block.items.map((item, itemIdx) => {
+                  const isLastItem = isLast && itemIdx === block.items.length - 1
+                  return (
+                    <li key={itemIdx} className="claude-prose-li">
+                      {renderInlineContent(item, onCitationClick)}
+                      {isLastItem && <span className="streaming-cursor">▍</span>}
+                    </li>
+                  )
+                })}
               </ol>
             )
           case 'table':
             return (
-              <div key={idx} className="claude-table-container">
-                <table className="claude-markdown-table">
-                  <thead>
-                    <tr>
-                      {block.headers.map((h, hIdx) => (
-                        <th key={hIdx}>{renderInlineContent(h, onCitationClick)}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {block.rows.map((row, rIdx) => (
-                      <tr key={rIdx}>
-                        {row.map((cell, cIdx) => (
-                          <td key={cIdx}>{renderInlineContent(cell, onCitationClick)}</td>
+              <React.Fragment key={idx}>
+                <div className="claude-table-container">
+                  <table className="claude-markdown-table">
+                    <thead>
+                      <tr>
+                        {block.headers.map((h, hIdx) => (
+                          <th key={hIdx}>{renderInlineContent(h, onCitationClick)}</th>
                         ))}
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {block.rows.map((row, rIdx) => (
+                        <tr key={rIdx}>
+                          {row.map((cell, cIdx) => (
+                            <td key={cIdx}>{renderInlineContent(cell, onCitationClick)}</td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {isLast && <span className="streaming-cursor">▍</span>}
+              </React.Fragment>
             )
           case 'code':
             return (
-              <div key={idx} className="claude-code-block-wrapper">
-                {block.lang && <div className="claude-code-lang">{block.lang}</div>}
-                <pre className="claude-code-pre">
-                  <code>{block.code}</code>
-                </pre>
-              </div>
+              <React.Fragment key={idx}>
+                <div className="claude-code-block-wrapper">
+                  {block.lang && <div className="claude-code-lang">{block.lang}</div>}
+                  <pre className="claude-code-pre">
+                    <code>{block.code}</code>
+                  </pre>
+                </div>
+                {isLast && <span className="streaming-cursor">▍</span>}
+              </React.Fragment>
             )
           case 'blockquote':
             return (
               <blockquote key={idx} className="claude-prose-quote">
                 {renderInlineContent(block.text, onCitationClick)}
+                {isLast && <span className="streaming-cursor">▍</span>}
               </blockquote>
             )
           default:
             return null
         }
       })}
+      {blocks.length === 0 && isStreaming && (
+        <span className="streaming-cursor">▍</span>
+      )}
     </div>
   )
 }

@@ -113,6 +113,10 @@ class Settings(BaseSettings):
         default=8,
         description="Narrowed top relevant chunks passed to LLM context after reranking"
     )
+    SIMPLE_TOP_K_CHUNKS: int = Field(
+        default=4,
+        description="Top chunks allocated to LLM context for simple single-fact queries to reduce generation latency"
+    )
     MIN_SIMILARITY: float = Field(
         default=0.0,
         description="Minimum cosine similarity cutoff threshold for relevance (0.0 allows hybrid BM25 and LLM gating)"
@@ -345,6 +349,10 @@ class Settings(BaseSettings):
                 f"TOP_K_CHUNKS ({self.TOP_K_CHUNKS}) must be less than or equal to "
                 f"RETRIEVE_K ({self.RETRIEVE_K})."
             )
+        if self.SIMPLE_TOP_K_CHUNKS <= 0:
+            raise ValueError("SIMPLE_TOP_K_CHUNKS must be greater than 0.")
+        if self.SIMPLE_TOP_K_CHUNKS > self.TOP_K_CHUNKS:
+            self.SIMPLE_TOP_K_CHUNKS = self.TOP_K_CHUNKS
         if not (0.0 <= self.MIN_SIMILARITY <= 1.0):
             raise ValueError(
                 f"MIN_SIMILARITY ({self.MIN_SIMILARITY}) must be between 0.0 and 1.0."

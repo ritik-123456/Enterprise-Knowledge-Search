@@ -1,0 +1,160 @@
+{
+  "gemini-flash-lite-latest": {
+    "model_name": "gemini-flash-lite-latest",
+    "runs": [
+      {
+        "status": "success",
+        "model": "gemini-flash-lite-latest",
+        "question_id": "FAST-01",
+        "ttft_ms": 2729.1,
+        "total_latency_s": 2.81,
+        "token_count": 3,
+        "tokens_per_sec": 37.1,
+        "fact_score_pct": 100.0,
+        "citations_verified": 1,
+        "table_formatted": true,
+        "answer_preview": "Application and control plane logs are retained for 30 days...."
+      },
+      {
+        "status": "success",
+        "model": "gemini-flash-lite-latest",
+        "question_id": "COMP-01",
+        "ttft_ms": 4067.9,
+        "total_latency_s": 5.04,
+        "token_count": 7,
+        "tokens_per_sec": 7.2,
+        "fact_score_pct": 33.3,
+        "citations_verified": 1,
+        "table_formatted": true,
+        "answer_preview": "Information regarding this topic was found in the uploaded documents and is compared below:  | Feature / Criteria | Karp..."
+      },
+      {
+        "status": "success",
+        "model": "gemini-flash-lite-latest",
+        "question_id": "MHOP-01",
+        "ttft_ms": 4029.7,
+        "total_latency_s": 4.31,
+        "token_count": 7,
+        "tokens_per_sec": 25.0,
+        "fact_score_pct": 100.0,
+        "citations_verified": 1,
+        "table_formatted": true,
+        "answer_preview": "Based on the provided document, the details regarding the SEV1 incident response and postmortem are as follows:  * **Res..."
+      },
+      {
+        "status": "success",
+        "model": "gemini-flash-lite-latest",
+        "question_id": "MSEC-01",
+        "ttft_ms": 3892.8,
+        "total_latency_s": 4.62,
+        "token_count": 14,
+        "tokens_per_sec": 19.3,
+        "fact_score_pct": 100.0,
+        "citations_verified": 1,
+        "table_formatted": true,
+        "answer_preview": "Based on the uploaded documents, here are the Pod Disruption Budget (PDB) rules and snapshot scheduling details:  *   **..."
+      },
+      {
+        "status": "success",
+        "model": "gemini-flash-lite-latest",
+        "question_id": "MDOC-01",
+        "ttft_ms": 2901.4,
+        "total_latency_s": 3.26,
+        "token_count": 7,
+        "tokens_per_sec": 19.5,
+        "fact_score_pct": 0.0,
+        "citations_verified": 2,
+        "table_formatted": true,
+        "answer_preview": "Information regarding control plane log retention was not found in the uploaded documents, but operational application l..."
+      }
+    ],
+    "metrics": {
+      "avg_ttft_ms": 3524.2,
+      "avg_latency_s": 4.01,
+      "avg_tokens_per_sec": 21.6,
+      "avg_fact_recall_pct": 66.7,
+      "table_compliance_pct": 100.0,
+      "avg_citations_per_query": 1.2,
+      "success_rate_pct": 100.0
+    }
+  },
+  "gemini-3.5-flash-lite": {
+    "model_name": "gemini-3.5-flash-lite",
+    "runs": [
+      {
+        "status": "success",
+        "model": "gemini-3.5-flash-lite",
+        "question_id": "FAST-01",
+        "ttft_ms": 2752.9,
+        "total_latency_s": 2.82,
+        "token_count": 3,
+        "tokens_per_sec": 44.7,
+        "fact_score_pct": 100.0,
+        "citations_verified": 1,
+        "table_formatted": true,
+        "answer_preview": "Application and control plane logs are retained for a maximum of 30 days...."
+      },
+      {
+        "status": "success",
+        "model": "gemini-3.5-flash-lite",
+        "question_id": "COMP-01",
+        "ttft_ms": 2698.9,
+        "total_latency_s": 2.7,
+        "token_count": 1,
+        "tokens_per_sec": 20.0,
+        "fact_score_pct": 0.0,
+        "citations_verified": 0,
+        "table_formatted": false,
+        "answer_preview": "Information regarding this topic was not found in the uploaded documents...."
+      },
+      {
+        "status": "success",
+        "model": "gemini-3.5-flash-lite",
+        "question_id": "MHOP-01",
+        "ttft_ms": 2793.3,
+        "total_latency_s": 2.97,
+        "token_count": 5,
+        "tokens_per_sec": 28.3,
+        "fact_score_pct": 100.0,
+        "citations_verified": 1,
+        "table_formatted": true,
+        "answer_preview": "Based on the provided documents, the answers to your questions are:  * **Target response time:** The response target for..."
+      },
+      {
+        "status": "success",
+        "model": "gemini-3.5-flash-lite",
+        "question_id": "MSEC-01",
+        "ttft_ms": 3107.5,
+        "total_latency_s": 4.56,
+        "token_count": 12,
+        "tokens_per_sec": 8.3,
+        "fact_score_pct": 100.0,
+        "citations_verified": 1,
+        "table_formatted": true,
+        "answer_preview": "Based on the provided documents, here are the Pod Disruption Budget (PDB) rules and snapshot scheduling details:  ### Po..."
+      },
+      {
+        "status": "success",
+        "model": "gemini-3.5-flash-lite",
+        "question_id": "MDOC-01",
+        "ttft_ms": 2978.5,
+        "total_latency_s": 3.25,
+        "token_count": 7,
+        "tokens_per_sec": 25.8,
+        "fact_score_pct": 100.0,
+        "citations_verified": 2,
+        "table_formatted": true,
+        "answer_preview": "Based on the provided documents, here is a comparison of the retention periods for logs:  | Log Type | Retention Period ..."
+      }
+    ],
+    "metrics": {
+      "avg_ttft_ms": 2866.2,
+      "avg_latency_s": 3.26,
+      "avg_tokens_per_sec": 25.4,
+      "avg_fact_recall_pct": 80.0,
+      "table_compliance_pct": 80.0,
+      "avg_citations_per_query": 1.0,
+      "success_rate_pct": 100.0
+    }
+  }
+}

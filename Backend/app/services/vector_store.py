@@ -154,9 +154,12 @@ class VectorStoreService:
             self.client = get_shared_client()
 
         self._ensure_collection()
-        # Launch background scan for legacy untenanted points without blocking startup
+        # Launch background scan for legacy untenanted points without blocking startup (remote only)
         try:
-            threading.Thread(target=self._scan_legacy_untenanted_points, daemon=True).start()
+            client_impl = getattr(self.client, "_client", None)
+            is_local = client_impl and "local" in client_impl.__class__.__name__.lower()
+            if not is_local:
+                threading.Thread(target=self._scan_legacy_untenanted_points, daemon=True).start()
         except Exception:
             pass
 
