@@ -1,0 +1,75 @@
+{
+  "system_prompt_tokens": 194,
+  "summary": [
+    {
+      "id": "FAST-01",
+      "category": "Fast-Path (Simple)",
+      "question_tokens": 15,
+      "base_chunk_count": 1,
+      "base_context_tokens": 3741,
+      "base_prompt_tokens": 3957,
+      "opt_chunk_count": 1,
+      "opt_context_tokens": 3741,
+      "opt_prompt_tokens": 3957,
+      "prompt_tokens_saved": 0,
+      "savings_pct": 0.0,
+      "opt_total_tokens": 3972
+    },
+    {
+      "id": "COMP-01",
+      "category": "Comparison (Complex)",
+      "question_tokens": 24,
+      "base_chunk_count": 1,
+      "base_context_tokens": 3741,
+      "base_prompt_tokens": 3966,
+      "opt_chunk_count": 1,
+      "opt_context_tokens": 3741,
+      "opt_prompt_tokens": 3966,
+      "prompt_tokens_saved": 0,
+      "savings_pct": 0.0,
+      "opt_total_tokens": 3978
+    },
+    {
+      "id": "MHOP-01",
+      "category": "Multi-Hop (Complex)",
+      "question_tokens": 39,
+      "base_chunk_count": 1,
+      "base_context_tokens": 3741,
+      "base_prompt_tokens": 3981,
+      "opt_chunk_count": 1,
+      "opt_context_tokens": 3741,
+      "opt_prompt_tokens": 3981,
+      "prompt_tokens_saved": 0,
+      "savings_pct": 0.0,
+      "opt_total_tokens": 4006
+    },
+    {
+      "id": "MSEC-01",
+      "category": "Multi-Section (Complex)",
+      "question_tokens": 33,
+      "base_chunk_count": 1,
+      "base_context_tokens": 3741,
+      "base_prompt_tokens": 3975,
+      "opt_chunk_count": 1,
+      "opt_context_tokens": 3741,
+      "opt_prompt_tokens": 3975,
+      "prompt_tokens_saved": 0,
+      "savings_pct": 0.0,
+      "opt_total_tokens": 4002
+    },
+    {
+      "id": "MDOC-01",
+      "category": "Cross-Document (Complex)",
+      "question_tokens": 28,
+      "base_chunk_count": 1,
+      "base_context_tokens": 3743,
+      "base_prompt_tokens": 3972,
+      "opt_chunk_count": 1,
+      "opt_context_tokens": 3743,
+      "opt_prompt_tokens": 3972,
+      "prompt_tokens_saved": 0,
+      "savings_pct": 0.0,
+      "opt_total_tokens": 3998
+    }
+  ]
+}

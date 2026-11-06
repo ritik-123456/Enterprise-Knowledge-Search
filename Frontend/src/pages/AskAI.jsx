@@ -19,7 +19,9 @@ import {
   RefreshCw,
   FolderOpen,
   ChevronDown,
-  Square
+  Square,
+  Layers,
+  Plus
 } from 'lucide-react'
 import ClaudeMarkdown, { stripChunkIdCitations } from '../components/ClaudeMarkdown'
 import { useChat } from '../context/ChatContext'
@@ -110,6 +112,28 @@ export default function AskAI() {
   const docsAbortControllerRef = useRef(null)
   const askAbortControllerRef = useRef(null)
   const currentUserIdRef = useRef(user?.id)
+  const allDocsRef = useRef(null)
+
+  // Close "All Documents" dropdown when clicking outside or pressing Escape
+  useEffect(() => {
+    if (!showDocsPanel) return
+    const handleClickOutside = (e) => {
+      if (allDocsRef.current && !allDocsRef.current.contains(e.target)) {
+        setShowDocsPanel(false)
+      }
+    }
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setShowDocsPanel(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [showDocsPanel])
 
   // Track if any PDF is currently uploading or processing in the background
   const isUploadingOrProcessing = uploads.some(
@@ -948,11 +972,13 @@ export default function AskAI() {
   // REUSABLE SUB-COMPONENTS
   // -------------------------------------------------------------
   const renderDocumentManagerPanel = () => (
-    <div className="docs-manager-panel">
-      <div className="docs-panel-header">
+    <>
+      <div className="all-docs-backdrop" onClick={() => setShowDocsPanel(false)} />
+      <div className="docs-manager-panel" onClick={(e) => e.stopPropagation()}>
+        <div className="docs-panel-header">
         <div className="docs-panel-title-group">
-          <FileText size={16} style={{ color: 'var(--accent-blue-light)' }} />
-          <span className="docs-panel-title">Indexed Documents ({documents.length})</span>
+          <Layers size={16} style={{ color: 'var(--accent-blue)' }} />
+          <span className="docs-panel-title">All Documents ({documents.length})</span>
         </div>
         <div className="docs-panel-actions">
           <button
@@ -975,9 +1001,57 @@ export default function AskAI() {
         </div>
       </div>
 
+      {/* Global Scope: Search All Documents */}
+      <div
+        className={`all-docs-scope-row ${!selectedDocId ? 'is-selected' : ''}`}
+        onClick={() => {
+          setSelectedDocId('')
+          setShowDocsPanel(false)
+        }}
+        title="Search across all indexed documents"
+      >
+        <div className="doc-item-left">
+          <div className="doc-icon-badge all-docs-badge">
+            <Layers size={15} />
+          </div>
+          <div className="doc-item-meta">
+            <span className="doc-item-name">All Documents (Entire Library)</span>
+            <div className="doc-item-stats">
+              <span>Query across all {documents.length} uploaded document{documents.length === 1 ? '' : 's'}</span>
+            </div>
+          </div>
+        </div>
+        <div className="doc-item-actions">
+          {!selectedDocId ? (
+            <span className="scope-active-pill">
+              <Check size={11} />
+              <span>Active Scope</span>
+            </span>
+          ) : (
+            <button
+              type="button"
+              className="doc-filter-btn"
+              onClick={(e) => {
+                e.stopPropagation()
+                setSelectedDocId('')
+                setShowDocsPanel(false)
+              }}
+            >
+              Select All
+            </button>
+          )}
+        </div>
+      </div>
+
+      {documents.length > 0 && (
+        <div className="all-docs-section-divider">
+          <span>Individual Documents ({documents.length})</span>
+        </div>
+      )}
+
       {isDocsLoading && documents.length === 0 ? (
         <div className="docs-empty-state">
-          <Loader2 size={20} className="spin-icon" style={{ color: 'var(--accent-blue-light)' }} />
+          <Loader2 size={20} className="spin-icon" style={{ color: 'var(--accent-blue)' }} />
           <span>Loading indexed documents...</span>
         </div>
       ) : docsError ? (
@@ -1030,7 +1104,10 @@ export default function AskAI() {
                   <button
                     type="button"
                     className={`doc-filter-btn ${isFiltered ? 'active' : ''}`}
-                    onClick={() => setSelectedDocId(isFiltered ? '' : doc.id)}
+                    onClick={() => {
+                      setSelectedDocId(isFiltered ? '' : doc.id)
+                      if (!isFiltered) setShowDocsPanel(false)
+                    }}
                     title={isFiltered ? 'Clear document filter' : 'Filter queries to this document only'}
                   >
                     {isFiltered ? 'Filtering' : 'Filter to doc'}
@@ -1056,6 +1133,7 @@ export default function AskAI() {
         </div>
       )}
     </div>
+  </>
   )
 
   const renderSearchInputCard = ({ isBottomDock = false } = {}) => (
@@ -1203,25 +1281,8 @@ export default function AskAI() {
 
         <div className="search-actions-bar">
           <div className="search-action-left">
-            {documents.length > 0 && (
-              <select
-                className="pill-btn"
-                value={selectedDocId}
-                onChange={(e) => setSelectedDocId(e.target.value)}
-                title="Select document scope for query"
-                style={{ cursor: 'pointer', appearance: 'auto' }}
-              >
-                <option value="">All Documents ({documents.length})</option>
-                {documents.map(d => (
-                  <option key={d.id} value={d.id}>
-                    {d.name} ({d.chunk_count} chunks)
-                  </option>
-                ))}
-              </select>
-            )}
-
             <button
-              className={`pill-btn ${uploads.length > 0 ? 'active' : ''}`}
+              className={`pill-btn attach-btn-compact ${uploads.length > 0 ? 'active' : ''}`}
               type="button"
               onClick={(e) => {
                 e.stopPropagation()
@@ -1231,11 +1292,50 @@ export default function AskAI() {
                 }
                 fileInputRef.current?.click()
               }}
-              title="Upload PDF document to index"
+              title="Attach PDF document to index"
+              aria-label="Attach PDF"
             >
-              <Paperclip size={14} style={{ color: uploads.length > 0 ? '#3b82f6' : '#64748b' }} />
-              <span>Attach PDF</span>
+              <Plus size={16} style={{ color: uploads.length > 0 ? 'var(--accent-blue)' : 'currentColor' }} />
             </button>
+
+            <div className="all-docs-scope-wrapper" ref={allDocsRef}>
+              <button
+                className={`pill-btn all-docs-trigger-btn ${showDocsPanel ? 'active' : ''} ${activeFilteredDoc ? 'is-filtered' : ''}`}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setShowDocsPanel(prev => !prev)
+                }}
+                title="Document Scope & Repository"
+              >
+                {activeFilteredDoc ? (
+                  <>
+                    <Filter size={12} style={{ color: 'var(--accent-blue)' }} />
+                    <span className="scope-doc-name" title={activeFilteredDoc.name}>
+                      {activeFilteredDoc.name}
+                    </span>
+                    <span
+                      className="scope-clear-chip"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setSelectedDocId('')
+                      }}
+                      title="Clear filter, search All Documents"
+                    >
+                      <X size={11} />
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Layers size={13} style={{ color: 'var(--accent-blue)' }} />
+                    <span>All Documents ({documents.length})</span>
+                  </>
+                )}
+                <ChevronDown size={12} className={`scope-chevron ${showDocsPanel ? 'open' : ''}`} />
+              </button>
+
+              {showDocsPanel && renderDocumentManagerPanel()}
+            </div>
           </div>
 
           {isGenerating ? (
@@ -1617,42 +1717,6 @@ export default function AskAI() {
             <h1 className="claude-hero-title">What ,can I help you find <span className=''>?</span></h1>
           </div>
 
-          {/* Document Management Bar */}
-          <div className="docs-manager-toggle-bar">
-            <button
-              type="button"
-              className={`docs-toggle-btn ${showDocsPanel ? 'active' : ''}`}
-              onClick={() => setShowDocsPanel(!showDocsPanel)}
-              title="Toggle Added Document Repository"
-            >
-              <FolderOpen size={14} />
-              <span>Added Documents</span>
-              <span className="docs-count-pill">{documents.length}</span>
-            </button>
-
-            {activeFilteredDoc && (
-              <div className="active-doc-filter-banner">
-                <div className="active-filter-left">
-                  <Filter size={12} />
-                  <span>
-                    Filtering to: <strong>{activeFilteredDoc.name}</strong> ({activeFilteredDoc.chunk_count} chunks)
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  className="clear-filter-btn"
-                  onClick={() => setSelectedDocId('')}
-                  title="Search all documents instead"
-                >
-                  <X size={13} />
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Expandable Document Manager Panel */}
-          {showDocsPanel && renderDocumentManagerPanel()}
-
           {/* Centered Search Bar */}
           {renderSearchInputCard({ isBottomDock: false })}
         </div>
@@ -1677,15 +1741,6 @@ export default function AskAI() {
               </span>
             </span>
 
-            <button
-              type="button"
-              className={`docs-toggle-btn ${showDocsPanel ? 'active' : ''}`}
-              onClick={() => setShowDocsPanel(!showDocsPanel)}
-              title="Toggle Indexed Document Repository"
-            >
-              <FolderOpen size={13} />
-              <span>Docs ({documents.length})</span>
-            </button>
           </div>
 
           <button
@@ -1698,9 +1753,6 @@ export default function AskAI() {
             <span>New Search</span>
           </button>
         </div>
-
-        {/* Expandable Document Manager Panel if opened in thread mode */}
-        {showDocsPanel && renderDocumentManagerPanel()}
 
         {/* Conversation Thread Messages (Claude-style Stream) */}
         {threadMessages.length > 0 ? (
