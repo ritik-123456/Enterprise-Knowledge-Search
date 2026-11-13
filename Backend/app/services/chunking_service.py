@@ -1,6 +1,7 @@
 import hashlib
 import re
 from datetime import datetime, timezone
+from functools import lru_cache
 from typing import List, Dict, Any, Optional, Tuple
 
 from app.core.config import settings
@@ -13,17 +14,31 @@ except Exception:
     tokenizer = None
 
 
-def count_tokens(text: str) -> int:
-    """
-    Count tokens accurately using tiktoken (cl100k_base),
-    with robust regex fallback if tiktoken is not available.
-    """
+@lru_cache(maxsize=16384)
+def _cached_token_count(text: str) -> int:
     if tokenizer is not None:
         try:
             return len(tokenizer.encode(text, disallowed_special=()))
         except Exception:
             pass
-    # Heuristic fallback: approx 1 token per 0.75 words
+    words = text.split()
+    return max(1, int(len(words) * 1.33)) if words else 0
+
+
+def count_tokens(text: str) -> int:
+    """
+    Count tokens accurately using tiktoken (cl100k_base),
+    with LRU memoization for high-throughput chunking.
+    """
+    if not text:
+        return 0
+    if len(text) < 1200:
+        return _cached_token_count(text)
+    if tokenizer is not None:
+        try:
+            return len(tokenizer.encode(text, disallowed_special=()))
+        except Exception:
+            pass
     words = text.split()
     return max(1, int(len(words) * 1.33)) if words else 0
 
@@ -67,39 +82,44 @@ def detect_heading_line(line: str) -> Optional[str]:
     Rules:
     - Must be <= 80 characters.
     - Must not end with a period '.'.
-    - Strict regex matching without re.IGNORECASE.
-    - Matches Markdown headers (#), numbered sections (1.2 Architecture),
+    - Handles Markdown formatting (**, *, _) often produced by PDF parsers.
+    - Matches Markdown headers (#), numbered sections (1.2 Architecture, **5.3** **Optimizer**),
       keyword headings (Section/Chapter/Policy/Summary/etc.), or strict ALL-CAPS titles.
     """
     stripped = line.strip()
-    if not stripped or len(stripped) > 80 or stripped.endswith("."):
+    if not stripped or len(stripped) > 80:
+        return None
+
+    # Strip markdown bold/italic markers (*, _) for heading evaluation
+    clean_line = re.sub(r'[*_]{1,3}', '', stripped).strip()
+    if not clean_line or len(clean_line) > 80 or clean_line.endswith("."):
         return None
 
     # 1. Markdown headings (# Heading, ## Subheading)
-    md_match = re.match(r"^#{1,6}\s+([A-Za-z0-9].*)$", stripped)
+    md_match = re.match(r"^#{1,6}\s+([A-Za-z0-9].*)$", clean_line)
     if md_match:
         return md_match.group(1).strip()
 
-    # 2. Numbered section titles (e.g., '1. Introduction', '2.3 System Architecture')
-    num_match = re.match(r"^[0-9]+(?:\.[0-9]+)*\.?\s+([A-Z].{2,})$", stripped)
+    # 2. Numbered section titles (e.g., '1. Introduction', '5.3 Optimizer', '**5.3** **Optimizer**')
+    num_match = re.match(r"^[0-9]+(?:\.[0-9]+)*\.?\s+([A-Z].{2,})$", clean_line)
     if num_match:
-        return stripped
+        return clean_line
 
     # 3. Explicit Keyword headings (case-sensitive, <= 80 chars, not ending with '.')
     keyword_match = re.match(
         r"^(?:Section|Chapter|Article|Policy|Summary|Overview|Appendix|Standard|Guideline|Procedure)\b(?:\s+[0-9A-Za-z\-_:]+)?.*$",
-        stripped
+        clean_line
     )
     if keyword_match:
-        return stripped
+        return clean_line
 
     # 4. Strict ALL-CAPS titles (at least 4 uppercase characters, digits/spaces/punctuation, NO lowercase)
     if (
-        re.match(r"^[A-Z0-9\s\-_:]{4,}$", stripped)
-        and re.search(r"[A-Z]{3,}", stripped)
-        and not re.search(r"[a-z]", stripped)
+        re.match(r"^[A-Z0-9\s\-_:]{4,}$", clean_line)
+        and re.search(r"[A-Z]{3,}", clean_line)
+        and not re.search(r"[a-z]", clean_line)
     ):
-        return stripped
+        return clean_line
 
     return None
 
@@ -422,25 +442,26 @@ class ChunkingService:
         if not sentences:
             return []
 
-        # 3. Chunk-building loop (no oversized-sentence bypass branch)
+        # 3. Chunk-building loop (using precomputed sentence token counts for O(1) step)
         chunks_data: List[Dict[str, Any]] = []
         i = 0
         n = len(sentences)
 
         while i < n:
             accumulated: List[Dict[str, Any]] = []
+            cur_tokens = 0
             j = i
 
             while j < n:
                 sent = sentences[j]
-                cand_text = " ".join([s["text"] for s in accumulated] + [sent["text"]]) if accumulated else sent["text"]
-                cand_tokens = count_tokens(cand_text)
+                s_toks = sent["tokens"]
 
                 # Stop if adding this sentence would exceed chunk size
-                if cand_tokens > self.chunk_size_tokens and accumulated:
+                if cur_tokens + s_toks > self.chunk_size_tokens and accumulated:
                     break
 
                 accumulated.append(sent)
+                cur_tokens += s_toks
                 j += 1
 
             chunk_text = " ".join(s["text"] for s in accumulated)
@@ -812,31 +833,32 @@ class ChunkingService:
                 continue
 
             # Break blocks down: split oversize tables and long paragraphs into atomic units
-            atomic_pieces: List[Tuple[int, str]] = []
+            # Each item in atomic_pieces stores (page_num, text_content, precalculated_tokens)
+            atomic_pieces: List[Tuple[int, str, int]] = []
             for b_page, b_text in sec["blocks"]:
-                if is_table_line(b_text) and count_tokens(b_text) > c_size:
+                b_toks = count_tokens(b_text)
+                if is_table_line(b_text) and b_toks > c_size:
                     split_tables = split_oversize_table(b_text, c_size)
                     for st in split_tables:
-                        atomic_pieces.append((b_page, st))
+                        atomic_pieces.append((b_page, st, count_tokens(st)))
                 else:
-                    if count_tokens(b_text) > c_size:
+                    if b_toks > c_size:
                         sents = [s.strip() for s in re.split(r'(?<=[.!?])\s+', b_text) if s.strip()]
                         for s in sents:
-                            atomic_pieces.append((b_page, s))
+                            atomic_pieces.append((b_page, s, count_tokens(s)))
                     else:
-                        atomic_pieces.append((b_page, b_text))
+                        atomic_pieces.append((b_page, b_text, b_toks))
 
-            # Group atomic pieces into child chunks with overlap
+            # Group atomic pieces into child chunks with overlap (O(1) token addition)
             idx = 0
             num_pieces = len(atomic_pieces)
             while idx < num_pieces:
-                accum = []
+                accum: List[Tuple[int, str, int]] = []
                 cur_tokens = 0
                 j = idx
 
                 while j < num_pieces:
-                    p_page, p_text = atomic_pieces[j]
-                    p_toks = count_tokens(p_text)
+                    p_page, p_text, p_toks = atomic_pieces[j]
                     if cur_tokens + p_toks > c_size and accum:
                         break
                     accum.append(atomic_pieces[j])
@@ -878,11 +900,11 @@ class ChunkingService:
                 if j >= num_pieces:
                     break
 
-                # Overlap step back
+                # Overlap step back using precomputed tokens (instant lookup)
                 overlap_accum = 0
                 step_back = j - 1
                 while step_back > idx:
-                    overlap_accum += count_tokens(atomic_pieces[step_back][1])
+                    overlap_accum += atomic_pieces[step_back][2]
                     if overlap_accum >= c_overlap:
                         break
                     step_back -= 1

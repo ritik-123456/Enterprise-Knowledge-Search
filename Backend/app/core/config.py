@@ -138,7 +138,7 @@ class Settings(BaseSettings):
 
     # Generation Limits & Factual Q&A Temperature
     LLM_MAX_TOKENS: int = Field(
-        default=1024,
+        default=2500,
         description="Maximum tokens allocated for synthesized answer generation"
     )
     LLM_TEMPERATURE: float = Field(
@@ -182,9 +182,9 @@ class Settings(BaseSettings):
         description="Toggle layout-aware PDF parser preserving tables and structure"
     )
     PDF_PARSER_ENGINE: str = Field(
-        default="pdf_oxide",
+        default="pymupdf4llm",
         validation_alias=AliasChoices("PDF_PARSER_ENGINE", "PDF_PARSER", "PDF_ENGINE"),
-        description="Engine for layout-aware PDF extraction: 'pdf_oxide' (fast Rust engine) or 'pymupdf4llm'"
+        description="Engine for layout-aware PDF extraction: 'pymupdf4llm' (default) or 'pdf_oxide'"
     )
 
     # Configurable Sizing for Parent-Child & Reranking
@@ -211,6 +211,29 @@ class Settings(BaseSettings):
     COHERE_API_KEY: Optional[str] = Field(
         default=None,
         description="Optional Cohere API key for Cohere Rerank API"
+    )
+
+    # Multimodal Vision Settings for Textbook Diagrams & Figures
+    ENABLE_VISION_EXTRACTION: bool = Field(
+        default=True,
+        description="Extract and caption diagrams, figures, and images from uploaded PDFs using Gemini Vision"
+    )
+    VISION_MODEL: str = Field(
+        default="gemini-flash-lite-latest",
+        validation_alias=AliasChoices("VISION_MODEL", "GEMINI_VISION_MODEL"),
+        description="Vision LLM model identifier for image captioning (e.g. gemini-flash-lite-latest, gemini-2.0-flash)"
+    )
+    DOCUMENT_IMAGES_PATH: str = Field(
+        default="./storage/document_images",
+        description="Local storage directory path for extracted PDF figures and diagrams"
+    )
+    VISION_MAX_IMAGES_PER_DOC: int = Field(
+        default=30,
+        description="Safety ceiling on images processed with Gemini Vision per uploaded document"
+    )
+    VISION_MIN_IMAGE_DIMENSION: int = Field(
+        default=120,
+        description="Minimum width and height in pixels for an extracted image to be considered a figure"
     )
 
     # Backward compatibility properties for existing modules

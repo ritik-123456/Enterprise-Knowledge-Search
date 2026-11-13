@@ -37,9 +37,26 @@ RERANKER_MAX_CHARS = 2000
 
 
 def tokenize_for_bm25(text: str) -> List[str]:
-    """Tokenizes text preserving technical terms, compound words, hyphens, and version numbers."""
+    """
+    Tokenizes text preserving technical terms, compound words, hyphens, and version numbers.
+    Also extracts compound entity tokens to ensure precise entity retrieval:
+    - 'Table 2' / 'table 2' -> 'table_2'
+    - 'Figure 1' / 'Fig. 1' -> 'figure_1', 'fig_1'
+    - 'Section 5.4' / 'Sec 5.4' -> 'section_5.4', 'sec_5.4'
+    """
     tokens = re.findall(r'[a-zA-Z0-9_\-\.:/]+', text.lower())
-    return [t for t in tokens if len(t) > 1 or t.isalnum()]
+    base_tokens = [t for t in tokens if len(t) > 1 or t.isalnum()]
+
+    # Extract compound entity tokens for tables, figures, equations, and sections
+    clean_text = text.lower()
+    entities = re.findall(r'\b(table|figure|fig|section|sec|eq|equation)\s*[:#\.]?\s*(\d+(?:\.\d+)*)\b', clean_text)
+    for ent_type, ent_num in entities:
+        norm_type = "figure" if ent_type in ("fig", "figure") else ("section" if ent_type in ("sec", "section") else ("equation" if ent_type in ("eq", "equation") else ent_type))
+        base_tokens.append(f"{norm_type}_{ent_num}")
+        if norm_type != ent_type:
+            base_tokens.append(f"{ent_type}_{ent_num}")
+
+    return base_tokens
 
 
 class CorpusBM25Index:
@@ -332,12 +349,21 @@ class CrossEncoderReranker:
                     if tok in h_lower:
                         heading_boost += 2.0
 
-            # 3. Term coverage ratio
-            covered_terms = sum(1 for tok in q_terms if tok in c_lower)
+            # 3. Term coverage ratio (checking both token set and raw lowercase text)
+            c_terms_set = set(c_tokens)
+            covered_terms = sum(1 for tok in q_terms if tok in c_terms_set or tok in c_lower or tok.replace('_', ' ') in c_lower)
             coverage_ratio = (covered_terms / len(q_terms)) if q_terms else 0.0
 
+            # 3b. Exact compound entity match bonus (e.g. "table_2", "figure_1", "section_5.4")
+            entity_match_boost = 0.0
+            compound_q_entities = {t for t in q_terms if "_" in t}
+            if compound_q_entities:
+                matching_entities = compound_q_entities & c_terms_set
+                if matching_entities:
+                    entity_match_boost += 5.0 * len(matching_entities)
+
             # 4. Dense term proximity & density
-            term_freq = sum(c_lower.count(tok) for tok in q_terms)
+            term_freq = sum(c_lower.count(tok) for tok in q_terms if "_" not in tok)
             density_score = min(3.0, term_freq * 0.15)
 
             # 5. Table formatting bonus if query mentions tables, alerts, errors, or thresholds
@@ -345,7 +371,7 @@ class CrossEncoderReranker:
             if ("|" in c_text or "table" in q_lower or "threshold" in q_lower or "alert" in q_lower or "error" in q_lower) and "|" in c_text:
                 table_bonus += 1.5
 
-            total_score = (coverage_ratio * 4.0) + exact_match_score + heading_boost + density_score + table_bonus
+            total_score = (coverage_ratio * 4.0) + exact_match_score + heading_boost + entity_match_boost + density_score + table_bonus
             scored.append((chunk, total_score))
 
         scored.sort(key=lambda x: x[1], reverse=True)

@@ -1,3 +1,4 @@
+import concurrent.futures
 import hashlib
 import logging
 import time
@@ -7,7 +8,7 @@ from typing import List, Dict, Any, Optional
 import fitz
 from starlette.concurrency import run_in_threadpool
 from fastapi import APIRouter, UploadFile, File, HTTPException, status, Request, BackgroundTasks, Depends
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, FileResponse
 
 from app.core.config import settings
 from app.core.auth_dependency import get_current_user_id
@@ -34,6 +35,7 @@ from app.services.chunking_service import chunking_service
 from app.services.vector_store import vector_store
 from app.services.rag_service import rag_service
 from app.services.hybrid_retriever import corpus_bm25_index
+from app.services.image_vision_service import image_vision_service
 
 logger = logging.getLogger(__name__)
 
@@ -83,17 +85,27 @@ def sync_document_store(user_id: Optional[str] = None):
         user_document_store[user_id][doc_id]["page_count"] = max((c.page_end for c in matching_chunks), default=1)
 
 
-def process_pdf_background(document_id: str, file_name: str, pages_or_content: Any, user_id: str):
+def process_pdf_background(
+    document_id: str,
+    file_name: str,
+    pages_or_content: Any,
+    user_id: str,
+    pdf_bytes: Optional[bytes] = None
+):
     """
-    Background worker for chunking and vector indexing using pre-extracted pages.
+    Background worker for chunking and vector indexing using pre-extracted pages
+    and multimodal vision analysis for diagrams and textbook images.
     Runs off the async event loop in a worker thread.
     Rolls back any partial vector store data if any step fails.
     """
     try:
+        raw_pdf_bytes: Optional[bytes] = None
         if isinstance(pages_or_content, bytes):
             pages = pdf_service.extract_text_by_pages(pages_or_content, file_name)
+            raw_pdf_bytes = pages_or_content
         else:
             pages = pages_or_content
+            raw_pdf_bytes = pdf_bytes
 
         user_docs = user_document_store.setdefault(user_id, {})
 
@@ -103,14 +115,41 @@ def process_pdf_background(document_id: str, file_name: str, pages_or_content: A
                 user_docs[document_id]["reason"] = "Could not extract readable text from pages."
             return
 
-        chunks = chunking_service.process_document(
-            pages=pages,
-            doc_name=file_name,
-            document_id=document_id
-        )
+        # Execute text chunking and multimodal vision extraction concurrently
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+            text_future = executor.submit(
+                chunking_service.process_document,
+                pages=pages,
+                doc_name=file_name,
+                document_id=document_id
+            )
 
-        for chunk in chunks:
-            chunk.user_id = user_id
+            vision_future = None
+            if raw_pdf_bytes and getattr(settings, "ENABLE_VISION_EXTRACTION", True):
+                vision_future = executor.submit(
+                    image_vision_service.extract_and_index_images,
+                    pdf_bytes=raw_pdf_bytes,
+                    document_id=document_id,
+                    doc_name=file_name,
+                    user_id=user_id
+                )
+
+            chunks = text_future.result()
+            for chunk in chunks:
+                chunk.user_id = user_id
+
+            if vision_future:
+                try:
+                    img_chunks = vision_future.result()
+                    if img_chunks:
+                        for ic in img_chunks:
+                            ic.user_id = user_id
+                        chunks.extend(img_chunks)
+                        logger.info(
+                            f"Extracted and attached {len(img_chunks)} visual figure chunks to doc {document_id}."
+                        )
+                except Exception as vision_err:
+                    logger.warning(f"Image vision processing encountered error on doc {document_id}: {vision_err}")
 
         vector_store.add_document(document_id, chunks, user_id=user_id)
         corpus_bm25_index.update_index(chunks, user_id=user_id)
@@ -126,6 +165,7 @@ def process_pdf_background(document_id: str, file_name: str, pages_or_content: A
         try:
             vector_store.delete_document(document_id, user_id=user_id)
             corpus_bm25_index.delete_document(document_id, user_id=user_id)
+            image_vision_service.cleanup_document_images(document_id)
         except Exception as cleanup_err:
             logger.warning(f"Rollback cleanup failed for document {document_id}: {cleanup_err}")
 
@@ -249,8 +289,8 @@ async def upload_pdf(
         "created_at": datetime.now(timezone.utc)
     }
 
-    # 6. Dispatch background task with pre-extracted pages and user_id
-    background_tasks.add_task(process_pdf_background, document_id, file.filename, pages, user_id)
+    # 6. Dispatch background task with pre-extracted pages, user_id, and raw bytes
+    background_tasks.add_task(process_pdf_background, document_id, file.filename, pages, user_id, content)
 
     # Return immediately
     return PDFUploadResponse(
@@ -422,6 +462,7 @@ def delete_document(
     # Delete from Qdrant vector store and BM25 index
     vector_store.delete_document(document_id, user_id=user_id)
     corpus_bm25_index.delete_document(document_id, user_id=user_id)
+    image_vision_service.cleanup_document_images(document_id)
 
     # Delete from local cache
     doc_info = user_docs.pop(document_id, None)
@@ -432,6 +473,32 @@ def delete_document(
         "message": f"Document '{name}' ({document_id}) removed from vector store.",
         "document_id": document_id
     }
+
+
+@router.get("/images/{document_id}/{image_name}")
+def get_document_image(document_id: str, image_name: str):
+    """
+    Serves extracted textbook figures and diagrams securely.
+    Guards against path traversal attacks.
+    """
+    import os
+    if ".." in document_id or ".." in image_name or "/" in image_name or "\\" in image_name:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid image request.")
+
+    base_dir = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "..", settings.DOCUMENT_IMAGES_PATH)
+    )
+    img_path = os.path.abspath(os.path.join(base_dir, document_id, image_name))
+
+    if not img_path.startswith(base_dir):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid image request.")
+
+    if not os.path.exists(img_path):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image not found.")
+
+    ext = os.path.splitext(image_name)[1].lower()
+    media_type = "image/png" if ext == ".png" else "image/jpeg" if ext in (".jpg", ".jpeg") else "application/octet-stream"
+    return FileResponse(img_path, media_type=media_type)
 
 
 @router.post("/ask")

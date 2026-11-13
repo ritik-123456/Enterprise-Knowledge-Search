@@ -37,9 +37,20 @@ def tokenize_query_and_text(text: str) -> List[str]:
     """
     Tokenizes text for BM25 keyword matching while preserving exact terms,
     error codes (ERR_502), ARNs (arn:aws:iam::123), and CLI flags (--kubeconfig).
+    Also extracts compound entity tokens like 'table_2', 'figure_1', 'section_5.4'.
     """
     tokens = re.findall(r'[a-zA-Z0-9_\-\.:/]+', text.lower())
-    return [t for t in tokens if len(t) > 1 or t.isalnum()]
+    base_tokens = [t for t in tokens if len(t) > 1 or t.isalnum()]
+
+    clean_text = text.lower()
+    entities = re.findall(r'\b(table|figure|fig|section|sec|eq|equation)\s*[:#\.]?\s*(\d+(?:\.\d+)*)\b', clean_text)
+    for ent_type, ent_num in entities:
+        norm_type = "figure" if ent_type in ("fig", "figure") else ("section" if ent_type in ("sec", "section") else ("equation" if ent_type in ("eq", "equation") else ent_type))
+        base_tokens.append(f"{norm_type}_{ent_num}")
+        if norm_type != ent_type:
+            base_tokens.append(f"{ent_type}_{ent_num}")
+
+    return base_tokens
 
 
 def compute_reciprocal_rank_fusion(
@@ -141,27 +152,119 @@ def extract_cited_chunk_ids(text: str) -> List[str]:
     return cited
 
 
-def strip_chunk_id_citations(text: str) -> str:
+def clean_latex_delimiters(text: str) -> str:
     """
-    Removes raw internal chunk ID citations such as [3ab80ad6529b_p1_c004] from answer text
-    for clean user experience while preserving punctuation and spacing.
+    Cleans raw LaTeX math notation ($N = 6$ -> N = 6, $$formula$$ -> clean block)
+    so user-facing text is natural and free of distracting $ symbols.
+    Handles closed and unclosed display formulas, inline variables, and stray delimiters.
     """
     if not text:
         return ""
-    # 1. Bracketed chunk IDs e.g. [3ab80ad6529b_p1_c004] or [doc_p1_c001]
+
+    def _clean_tex_expr(s: str) -> str:
+        s = re.sub(r'\\text\{([^}]+)\}', r'\1', s)
+        s = re.sub(r'\\mathbf\{([^}]+)\}', r'\1', s)
+        s = re.sub(r'\\math[a-zA-Z]+\{([^}]+)\}', r'\1', s)
+        s = re.sub(r'\\frac\{([^}]+)\}\{([^}]+)\}', r'(\1 / \2)', s)
+        s = re.sub(r'\\sqrt\{([^}]+)\}', r'sqrt(\1)', s)
+        s = re.sub(r'\\left\(|\\right\)', '', s)
+        s = re.sub(r'\\dots', '...', s)
+        s = re.sub(r'\\times', ' * ', s)
+        s = re.sub(r'_\{([^}]+)\}', r'_\1', s)
+        s = re.sub(r'\^\{([^}]+)\}', r'^\1', s)
+        s = s.replace('\\', '')
+        return s.strip()
+
+    # 1. Clean closed display math $$ ... $$
+    def clean_display(m):
+        eq = _clean_tex_expr(m.group(1))
+        return f"\n\n```\n{eq}\n```\n\n"
+
+    cleaned = re.sub(r'\$\$(.*?)\$\$', clean_display, text, flags=re.DOTALL)
+
+    # 2. Clean unclosed display math $$ ... (up to end of string or next section)
+    cleaned = re.sub(r'\$\$([\s\S]*?)(?=\$\$|\Z)', clean_display, cleaned)
+
+    # 3. Clean closed inline math $ ... $
+    def clean_inline(m):
+        return _clean_tex_expr(m.group(1))
+
+    cleaned = re.sub(r'\$([^\$\n]+)\$', clean_inline, cleaned)
+
+    # 4. Clean unclosed inline math $var...
+    cleaned = re.sub(r'\$([a-zA-Z][^\$\n]*)', clean_inline, cleaned)
+
+    # 5. Remove any leftover non-currency $ symbols (e.g. not $100)
+    cleaned = re.sub(r'\$(?!\d)', '', cleaned)
+
+    # 6. Normalize excessive blank lines created by block replacements
+    cleaned = re.sub(r'\n{3,}', '\n\n', cleaned)
+
+    return cleaned
+
+
+def strip_chunk_id_citations(text: str) -> str:
+    """
+    Removes raw internal chunk ID citations such as [3ab80ad6529b_p1_c004] or [9445dbf864e9_img_p3_01]
+    from answer text for clean user experience while preserving punctuation, spacing, and markdown images ![alt](url).
+    Also sanitizes any raw LaTeX math dollar delimiters ($N = 6$ -> N = 6).
+    """
+    if not text:
+        return ""
+    # 0. Clean raw LaTeX math dollar notation ($N = 6$ -> N = 6)
+    cleaned = clean_latex_delimiters(text)
+
+    # 1. Bracketed chunk IDs e.g. [3ab80ad6529b_p1_c004] or [9445dbf864e9_img_p3_01] (excluding ![images](...))
     cleaned = re.sub(
-        r'\s*\[\s*(?:chunk\s*id\s*:\s*)?[a-zA-Z0-9_\-]+_p\d+_c\d+(?:\s*,\s*(?:chunk\s*id\s*:\s*)?[a-zA-Z0-9_\-]+_p\d+_c\d+)*\s*\]',
+        r'(?<!\!)\s*\[\s*(?:chunk\s*id\s*:\s*)?[a-zA-Z0-9_\-]+_(?:p\d+_c\d+|img_p\d+_\d+|p\d+_img\d+)(?:\s*,\s*(?:chunk\s*id\s*:\s*)?[a-zA-Z0-9_\-]+_(?:p\d+_c\d+|img_p\d+_\d+|p\d+_img\d+))*\s*\]',
         '',
-        text,
+        cleaned,
         flags=re.IGNORECASE
     )
-    # 2. General bracket with _p and _c chunk ID pattern
-    cleaned = re.sub(r'\s*\[\s*[^\]]*_p\d+_c\d+[^\]]*\s*\]', '', cleaned)
-    # 3. Strip any certainty/confidence prefixes or meta-tags (e.g. "high confidence")
+    # 2. General bracket with _p and _c or _img pattern (excluding ![images](...))
+    cleaned = re.sub(r'(?<!\!)\s*\[\s*[^\]]*?(?:_p\d+|_img_p\d+)[^\]]*?\s*\]', '', cleaned)
+    # 3. Strip bracketed section citations like [5.3], [Section 5.3] (excluding markdown links [text](url))
+    cleaned = re.sub(r'(?<!\!)\s*\[\s*(?:section\s*)?\d+(?:\.\d+)*\s*\](?!\()', '', cleaned, flags=re.IGNORECASE)
+    # 4. Strip raw HTML <br> artifacts from table cells and prose
+    cleaned = re.sub(r'<br\s*/?>', ' ', cleaned)
+    # 5. Clean dummy Col1, Col2 placeholders in markdown tables
+    cleaned = re.sub(r'\bCol\d+\b', 'Attribute', cleaned)
+    # 6. Strip any certainty/confidence prefixes or meta-tags (e.g. "high confidence")
     cleaned = re.sub(r'(?i)\(?\bhigh\s+confidence\b:?\)?\s*', '', cleaned)
-    # 4. Clean up spaces before punctuation
+    # 7. Clean up spaces before punctuation
     cleaned = re.sub(r'\s+([.,;:!?])', r'\1', cleaned)
     return cleaned.strip()
+
+
+def resolve_grounding_text(chunk_text: str, parent_text: Optional[str], max_chars: int = 3500) -> str:
+    """
+    Safely resolves the grounding text for a chunk.
+    If parent_text is present and <= max_chars, returns parent_text intact.
+    If parent_text is excessively long (e.g. from an un-split legacy document),
+    extracts a focused window centered on chunk_text to prevent context bloat
+    and eliminate needle-in-a-haystack retrieval dilution.
+    """
+    if not parent_text:
+        return chunk_text
+    if len(parent_text) <= max_chars:
+        return parent_text
+
+    clean_needle = re.sub(r'^\[Document:[^\]]+\]\s*', '', chunk_text).strip()
+    idx = parent_text.find(clean_needle[:60]) if clean_needle else -1
+    if idx == -1:
+        words = [w for w in clean_needle.split() if len(w) > 3][:6]
+        if words:
+            query_phrase = " ".join(words)
+            idx = parent_text.find(query_phrase)
+
+    if idx == -1:
+        return chunk_text
+
+    target_window = min(max_chars, len(parent_text))
+    half = (target_window - min(len(clean_needle), target_window)) // 2
+    start = max(0, idx - max(0, half))
+    end = min(len(parent_text), idx + len(clean_needle) + max(0, half))
+    return parent_text[start:end].strip()
 
 
 SNIPPET_STOP_WORDS = {
@@ -468,9 +571,10 @@ class RAGService:
         for idx, (chunk, v_score, _) in enumerate(top_chunks):
             heading_info = f" ({chunk.section_heading})" if chunk.section_heading else ""
             page_info = f"Page {chunk.page_start}" if chunk.page_start == chunk.page_end else f"Pages {chunk.page_start}-{chunk.page_end}"
+            body_text = resolve_grounding_text(chunk.text, chunk.parent_text) if (getattr(settings, "ENABLE_PARENT_CHILD", True) and chunk.parent_text) else chunk.text
             context_blocks.append(
                 f"[Chunk ID: {chunk.chunk_id} | Document: {chunk.document_name} | {page_info}{heading_info}]\n"
-                f"{chunk.text}"
+                f"{body_text}"
             )
         context_text = "\n\n".join(context_blocks)
 
@@ -505,12 +609,22 @@ class RAGService:
                 "You are an enterprise AI knowledge assistant. Answer the user's question "
                 "strictly and factually based ONLY on the provided context excerpts.\n\n"
                 "Rules:\n"
-                "1. Answer ONLY using facts directly stated in the context excerpts. Do NOT extrapolate or assume.\n"
-                "2. Cite the relevant chunk_id inline in brackets immediately following each fact, policy, or claim (e.g. '[chunk_id]').\n"
-                "3. If the context does not contain sufficient information to answer the question, state clearly: "
-                "'Information regarding this topic was not found in the uploaded documents.'\n"
-                "4. When answering, provide a direct factual answer. If the context contains a sequence, steps, or numbered items, preserve the numbered list.\n"
-                "5. Do NOT include meta-commentary, confidence scores, or certainty declarations (never write 'high confidence' or confidence metrics)."
+                "1. Treat casual, lowercase, keyword-based, or topic-style queries (e.g. 'optimizer topic explain it', 'attention mechanism overview', 'encoder architecture') as direct requests to explain that concept or section found in the context excerpts. Do NOT refuse or declare information missing just because the query uses informal wording or lowercase terms if the subject is discussed in the context.\n"
+                "2. Answer ONLY using facts directly stated in the context excerpts. Do NOT extrapolate or assume.\n"
+                "3. Cite the exact chunk_id inline in brackets immediately following each fact, claim, or policy (e.g. '[chunk_id]'). Cite the exact Chunk ID from the excerpt header (e.g. '[9445dbf864e9_p7_c015]'). Do NOT cite section numbers like '[5.3]' or page numbers.\n"
+                "4. TABLE FORMATTING & CLEANING RULES:\n"
+                "   - NEVER output raw HTML tags (NEVER write '<br>', '<br/>', '<span>', etc.) in table cells or markdown text.\n"
+                "   - NEVER output placeholder column headers like 'Col1', 'Col2', 'Col3'.\n"
+                "   - When answering questions about tables, comparisons, or benchmark results (e.g. Table 2, Table 3), YOU MUST RENDER THE COMPLETE DATA AS A CLEAN MARKDOWN TABLE (`| Column 1 | Column 2 |`) with all rows and columns preserved.\n"
+                "   - When extracted context tables contain merged columns, multi-line values, or '<br>' artifacts (such as Table 3 variations), YOU MUST PARSE AND NORMALIZE the data into a clean, well-aligned Markdown table with proper individual column headers (e.g. | Model Variation | Configuration / Changes | PPL (dev) | BLEU (dev) | Params |). Ensure every row represents a single clean model variation.\n"
+                "   - When discussing tables or variations, provide a clear conceptual explanation of what each variation demonstrates in addition to the table.\n"
+                "5. If the context does not contain sufficient information to answer the question, state clearly: "
+                "'Information regarding this topic was not found in the uploaded documents.' Only use this refusal when the requested subject is genuinely absent from the excerpts.\n"
+                "6. When answering, provide a direct factual answer. If the context contains a sequence, steps, or numbered items, preserve the numbered list.\n"
+                "7. Do NOT include meta-commentary, confidence scores, or certainty declarations (never write 'high confidence' or confidence metrics).\n"
+                "8. When the context excerpts contain visual figures or diagrams with an image link (e.g. ![Caption](/api/documents/images/...)), YOU MUST EMBED THE EXACT IMAGE TAG on its own line surrounded by blank lines:\n\n![Caption](/api/documents/images/...)\n\nin your response so the diagram is rendered visually as a standalone figure card. Do not omit the image tag or glue it to text.\n"
+                "9. Do NOT use LaTeX math dollar signs ($ or $$). Write all variables, parameters, counts, and dimensions in clean, natural plain text (e.g. write 'N = 6 identical layers' instead of '$N = 6$', write 'd_model = 512' instead of '$d_{\\text{model}} = 512$', write '(x_1, ..., x_n)' instead of '$(x_1, \\dots, x_n)$'). Write mathematical equations in clear readable notation or markdown code blocks without dollar signs.\n"
+                "10. When a context excerpt contains a floating table or figure (e.g. Table 2) that physically appears within a section (such as Section 5.4 Regularization) but reports data for another topic (such as Machine Translation benchmark results), clarify this distinction if asked. Explain the section's actual subject matter, and if asked about the table or results, explain what the table represents."
             )
 
             user_prompt = f"Context Excerpts:\n{context_text}\n\nQuestion: {question}"
@@ -551,54 +665,8 @@ class RAGService:
                 )
 
             # Step 8: Strict Citation Validation (Requirement 4)
-            raw_cited_ids = extract_cited_chunk_ids(answer_content)
-            valid_citations: List[CitationSource] = []
-            valid_ids_seen = set()
-
-            for cid in raw_cited_ids:
-                if cid in retrieved_map:
-                    if cid not in valid_ids_seen:
-                        valid_ids_seen.add(cid)
-                        chunk, v_score = retrieved_map[cid]
-                        snippet = build_citation_snippet(
-                            chunk_text=chunk.text,
-                            question=question,
-                            answer=answer_content,
-                            max_chars=300
-                        )
-                        valid_citations.append(
-                            CitationSource(
-                                chunk_id=chunk.chunk_id,
-                                source_name=chunk.document_name,
-                                page_start=chunk.page_start,
-                                page_end=chunk.page_end,
-                                snippet=snippet,
-                                score=round(v_score, 3),
-                                id=len(valid_citations) + 1,
-                                section_heading=chunk.section_heading
-                            )
-                        )
-                else:
-                    logger.warning(f"Dropping invalid cited chunk_id '{cid}' not in retrieved context set.")
-
-            is_insufficient = (
-                not valid_citations
-                or answer_content.strip().lower().startswith("information regarding this topic was not found")
-                or (
-                    len(answer_content.strip()) < 180
-                    and any(
-                        term in answer_content.lower()
-                        for term in [
-                            "not found in the uploaded documents",
-                            "does not contain sufficient information",
-                            "cannot be determined from the excerpts",
-                            "not mentioned in the provided context"
-                        ]
-                    )
-                )
-            )
-
-            if is_insufficient:
+            valid_citations, is_insufficient = self._validate_citations(answer_content, question, retrieved_map)
+            if not valid_citations or is_insufficient:
                 logger.info("No valid citations found in answer or answer declared insufficient. Setting answerable=False.")
                 return self._create_not_found_response(question, start_time)
 
@@ -655,8 +723,26 @@ class RAGService:
         valid_citations: List[CitationSource] = []
         valid_ids_seen = set()
 
-        for cid in raw_cited_ids:
-            if cid in retrieved_map and cid not in valid_ids_seen:
+        # Build section heading & number lookup map to resolve citations like [5.3] or [Optimizer]
+        section_lookup: Dict[str, str] = {}
+        for cid, (chunk, _) in retrieved_map.items():
+            if chunk.section_heading:
+                clean_sec = re.sub(r'[*_]{1,3}', '', chunk.section_heading).strip()
+                # 1. Match section number e.g. "5.3", "5.2"
+                num_m = re.match(r'^(\d+(?:\.\d+)*)', clean_sec)
+                if num_m:
+                    section_lookup[num_m.group(1).lower()] = cid
+                    section_lookup[f"section {num_m.group(1)}".lower()] = cid
+                # 2. Match section heading words e.g. "optimizer"
+                sec_words = [w.lower() for w in re.split(r'[\s\-_\.:]+', clean_sec) if len(w) > 3]
+                for w in sec_words:
+                    if w not in section_lookup:
+                        section_lookup[w] = cid
+
+        for raw_id in raw_cited_ids:
+            # Match directly against chunk_id or mapped section number/heading
+            cid = raw_id if raw_id in retrieved_map else section_lookup.get(raw_id.lower().strip())
+            if cid and cid in retrieved_map and cid not in valid_ids_seen:
                 valid_ids_seen.add(cid)
                 chunk, v_score = retrieved_map[cid]
                 snippet = build_citation_snippet(
@@ -680,8 +766,10 @@ class RAGService:
 
         is_insufficient = (
             answer_content.strip().lower().startswith("information regarding this topic was not found")
+            or (answer_content.strip().lower().startswith("information regarding") and "was not found" in answer_content.lower()[:90])
             or (
                 len(answer_content.strip()) < 180
+                and not any(marker in answer_content for marker in ["*", "-", "•", "1.", "2.", ":"])
                 and any(
                     term in answer_content.lower()
                     for term in [
@@ -906,7 +994,7 @@ class RAGService:
             for chunk, v_score in final_chunks:
                 page_info = f"Page {chunk.page_start}" if chunk.page_start == chunk.page_end else f"Pages {chunk.page_start}-{chunk.page_end}"
                 heading_info = f" | Section: {chunk.section_heading}" if chunk.section_heading else ""
-                body_text = chunk.parent_text if (getattr(settings, "ENABLE_PARENT_CHILD", True) and chunk.parent_text) else chunk.text
+                body_text = resolve_grounding_text(chunk.text, chunk.parent_text) if (getattr(settings, "ENABLE_PARENT_CHILD", True) and chunk.parent_text) else chunk.text
                 context_blocks.append(
                     f"[Chunk ID: {chunk.chunk_id} | Document: {chunk.document_name} | {page_info}{heading_info}]\n"
                     f"{body_text}"
@@ -918,14 +1006,23 @@ class RAGService:
                 "You are an enterprise AI knowledge assistant. Answer the user's question "
                 "strictly and factually based ONLY on the provided context excerpts.\n\n"
                 "Rules:\n"
-                "1. Answer ONLY using facts directly stated in the context excerpts. Do NOT extrapolate or assume.\n"
-                "2. Cite the relevant chunk_id inline in brackets immediately following each fact, claim, or policy (e.g. '[chunk_id]').\n"
-                "3. When answering comparison questions, YOU MUST USE A MARKDOWN TABLE comparing the items side-by-side across relevant criteria.\n"
-                "4. When multiple sub-questions or distinct aspects are asked, answer each one explicitly using clear bullet points or section headings.\n"
-                "5. If the context does not contain sufficient information to answer the question, state clearly: "
-                "'Information regarding this topic was not found in the uploaded documents.'\n"
-                "6. Preserve numbered lists, exact thresholds, and commands.\n"
-                "7. Do NOT include meta-commentary, confidence scores, or certainty declarations (never write 'high confidence' or confidence metrics)."
+                "1. Treat casual, lowercase, keyword-based, or topic-style queries (e.g. 'optimizer topic explain it', 'attention mechanism overview', 'encoder architecture') as direct requests to explain that concept or section found in the context excerpts. Do NOT refuse or declare information missing just because the query uses informal wording or lowercase terms if the subject is discussed in the context.\n"
+                "2. Answer ONLY using facts directly stated in the context excerpts. Do NOT extrapolate or assume.\n"
+                "3. Cite the exact chunk_id inline in brackets immediately following each fact, claim, or policy (e.g. '[chunk_id]'). Cite the exact Chunk ID string from the excerpt header (e.g. '[9445dbf864e9_p7_c015]'). Do NOT cite section numbers like '[5.3]' or page numbers.\n"
+                "4. TABLE FORMATTING & CLEANING RULES:\n"
+                "   - NEVER output raw HTML tags (NEVER write '<br>', '<br/>', '<span>', etc.) in table cells or markdown text.\n"
+                "   - NEVER output placeholder column headers like 'Col1', 'Col2', 'Col3'.\n"
+                "   - When answering questions about tables, comparisons, or benchmark results (e.g. Table 2, Table 3), YOU MUST RENDER THE COMPLETE DATA AS A CLEAN MARKDOWN TABLE (`| Column 1 | Column 2 |`) with all rows and columns preserved.\n"
+                "   - When extracted context tables contain merged columns, multi-line values, or '<br>' artifacts (such as Table 3 variations), YOU MUST PARSE AND NORMALIZE the data into a clean, well-aligned Markdown table with proper individual column headers (e.g. | Model Variation | Configuration / Changes | PPL (dev) | BLEU (dev) | Params |). Ensure every row represents a single clean model variation.\n"
+                "   - When discussing tables or variations, provide a clear conceptual explanation of what each variation demonstrates in addition to the table.\n"
+                "5. When multiple sub-questions or distinct aspects are asked, answer each one explicitly using clear bullet points or section headings.\n"
+                "6. If the context does not contain sufficient information to answer the question, state clearly: "
+                "'Information regarding this topic was not found in the uploaded documents.' Only use this refusal when the requested subject is genuinely absent from the excerpts.\n"
+                "7. Preserve numbered lists, exact thresholds, and commands.\n"
+                "8. Do NOT include meta-commentary, confidence scores, or certainty declarations (never write 'high confidence' or confidence metrics).\n"
+                "9. When the context excerpts contain visual figures or diagrams with an image link (e.g. ![Caption](/api/documents/images/...)), YOU MUST EMBED THE EXACT IMAGE TAG on its own line surrounded by blank lines:\n\n![Caption](/api/documents/images/...)\n\nin your response so the diagram is rendered visually as a standalone figure card. Do not omit the image tag or glue it to text.\n"
+                "10. Do NOT use LaTeX math dollar signs ($ or $$). Write all variables, parameters, counts, and dimensions in clean, natural plain text (e.g. write 'N = 6 identical layers' instead of '$N = 6$', write 'd_model = 512' instead of '$d_{\\text{model}} = 512$', write '(x_1, ..., x_n)' instead of '$(x_1, \\dots, x_n)$'). Write mathematical equations in clear readable notation or markdown code blocks without dollar signs.\n"
+                "11. When a context excerpt contains a floating table or figure (e.g. Table 2) that physically appears within a section (such as Section 5.4 Regularization) but reports data for another topic (such as Machine Translation benchmark results), clarify this distinction if asked. Explain the section's actual subject matter, and if asked about the table or results, explain what the table represents."
             )
 
             user_prompt = f"Context Excerpts:\n{context_text}\n\nQuestion: {question}"

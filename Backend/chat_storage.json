@@ -1,5 +1,1734 @@
 [
   {
+    "id": "chat_1794593789933",
+    "user_id": "112675643328808722449",
+    "user_email": "ritikkr274@gmail.com",
+    "title": "Model variations table",
+    "messages": [
+      {
+        "id": "u-1794593783500-q12n",
+        "role": "user",
+        "text": "Model variations table",
+        "timestamp": "11:46 pm"
+      },
+      {
+        "id": "a-1794593783500-tfgh",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": true,
+          "answer": "To evaluate the importance of different components of the Transformer, the base model was varied in different ways, and the changes in performance on English-to-German translation on the development set (newstest2013) were measured. \n\n### Conceptual Explanation of Model Variations\n\n* **Base Model:** Serves as the reference configuration with 6 layers, d_model = 512, d_ff = 2048, h = 8, d_k = 64, d_v = 64, dropout = 0.1, label smoothing = 0.1, and 100K training steps.\n* **Rows (A):** Varies the number of attention heads and the attention key and value dimensions while keeping the amount of computation constant. Single-head attention performs worse (0.9 BLEU below the best setting), and quality also drops off with too many heads.\n* **Rows (B):** Evaluates reducing the attention key size (d_k), which hurts model quality, suggesting that determining compatibility is not easy and that a more sophisticated compatibility function than a dot product might be beneficial.\n* **Rows (C):** Demonstrates that bigger models perform better.\n* **Rows (D):** Shows that dropout is very helpful in avoiding over-fitting.\n* **Rows (E):** Replaces the sinusoidal positional encoding with learned positional embeddings, showing nearly identical results to the base model.\n* **Big Model:** A larger scaled configuration tested for comparison.\n\n### Transformer Architecture Variations Table\n\n| Model Variation | Train Steps / Config Details | PPL (dev) | BLEU (dev) | Params (x10^6) |\n|:--- |:--- |:--- |:--- |:--- |\n| **base** | N = 6, d_model = 512, d_ff = 2048, h = 8, d_k = 64, d_v = 64, drop = 0.1, ls = 0.1, steps = 100K | 4.92 | 25.8 | 65 |\n| **(A)** | h = 1, d_k = d_v = 512 | 5.29 | 24.9 | |\n| **(A)** | h = 4, d_k = d_v = 128 | 5.00 | 25.5 | |\n| **(A)** | h = 16, d_k = d_v = 32 | 4.91 | 25.8 | |\n| **(A)** | h = 32, d_k = d_v = 16 | 5.01 | 25.4 | |\n| **(B)** | d_k = 16 | 5.16 | 25.1 | 58 |\n| **(B)** | d_k = 32 | 5.01 | 25.4 | 60 |\n| **(C)** | N = 2 | 6.11 | 23.7 | 36 |\n| **(C)** | N = 4 | 5.19 | 25.3 | 50 |\n| **(C)** | d_model = 256 | 4.88 | 25.5 | 80 |\n| **(C)** | d_model = 1024 | 5.75 | 24.5 | 28 |\n| **(C)** | d_ff = 1024 | 4.66 | 26.0 | 168 |\n| **(C)** | d_ff = 4096 | 5.12 | 25.4 | 53 |\n| **(C)** | h = 4 | 4.75 | 26.2 | 90 |\n| **(D)** | dropout = 0.0 | 5.77 | 24.6 | |\n| **(D)** | dropout = 0.2 | 4.95 | 25.5 | |\n| **(D)** | label smoothing = 0.0 | 4.67 | 25.3 | |\n| **(D)** | label smoothing = 0.2 | 5.47 | 25.7 | |\n| **(E)** | positional embedding instead of sinusoids | 4.92 | 25.7 | |\n| **big** | N = 6, d_model = 1024, d_ff = 4096, h = 16, drop = 0.3, steps = 300K | **4.33** | **26.4** | 213 |",
+          "lead": "To evaluate the importance of different components of the Transformer, the base model was varied in different ways, and the changes in performance on English-to-German translation on the development set (newstest2013) were measured. ### Conceptual Explanation of Model Variations",
+          "keyPoints": [
+            "**Base Model:** Serves as the reference configuration with 6 layers, d_model = 512, d_ff = 2048, h = 8, d_k = 64, d_v = 64, dropout = 0.1, label smoothing = 0.1, and 100K training steps.",
+            "**Rows (A):** Varies the number of attention heads and the attention key and value dimensions while keeping the amount of computation constant. Single-head attention performs worse (0.9 BLEU below the best setting), and quality also drops off with too many heads.",
+            "**Rows (B):** Evaluates reducing the attention key size (d_k), which hurts model quality, suggesting that determining compatibility is not easy and that a more sophisticated compatibility function than a dot product might be beneficial.",
+            "**Rows (C):** Demonstrates that bigger models perform better.",
+            "**Rows (D):** Shows that dropout is very helpful in avoiding over-fitting.",
+            "**Rows (E):** Replaces the sinusoidal positional encoding with learned positional embeddings, showing nearly identical results to the base model.",
+            "**Big Model:** A larger scaled configuration tested for comparison."
+          ],
+          "stats": {
+            "responseTime": "6.41s",
+            "sourcesUsed": 1,
+            "retrievalStrength": "High"
+          },
+          "sources": [
+            {
+              "id": 1,
+              "source_name": "Test.pdf",
+              "page": "Pages 8-9",
+              "page_start": 8,
+              "page_end": 9,
+              "snippet": "[Document: Test.pdf | Section: 6.2 Model Variations | Page 8] To evaluate the importance of different components of the Transformer, we varied our base model ..."
+            }
+          ]
+        },
+        "error": null,
+        "timestamp": "11:46 pm"
+      }
+    ],
+    "created_at": "2026-11-13T18:16:29.941859+00:00",
+    "updated_at": "2026-11-13T18:16:29.941859+00:00"
+  },
+  {
+    "id": "chat_1794513823925",
+    "user_id": "112675643328808722449",
+    "user_email": "ritikkr274@gmail.com",
+    "title": "Explain Model variations",
+    "messages": [
+      {
+        "id": "u-1794513810590-46hs",
+        "role": "user",
+        "text": "Explain Model variations",
+        "timestamp": "01:33 am"
+      },
+      {
+        "id": "a-1794513810590-2tv6",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": true,
+          "answer": "To evaluate the importance of different components of the Transformer, the base model was varied in different ways, and the change in performance was measured on English-to-German translation on the development set, newstest2013, using beam search without checkpoint averaging. \n\nThe architecture variations and their results from Table 3 are presented below. Unlisted values are identical to those of the base model. Listed perplexities are per-wordpiece, according to byte-pair encoding.\n\n| Model Variation | Configuration / Changes | PPL (dev) | BLEU (dev) | Parameters (Millions) |\n|---|---|---|---|---|\n| base | N = 6, d_model = 512, d_ff = 2048, h = 8, d_k = 64, d_v = 64, drop = 0.1, ls = 0.1, steps = 100K | 4.92 | 25.8 | 65 |\n| (A) | Varying number of attention heads and key/value dimensions while keeping computation constant | 5.29 5.00 4.91 5.01 | 24.9 25.5 25.8 25.4 | - |\n| (B) | Reducing attention key size d_k | 5.16 5.01 | 25.1 25.4 | 58 60 |\n| (C) | Varying model sizes and dimensions | 6.11 5.19 4.88 5.75 4.66 5.12 4.75 | 23.7 25.3 25.5 24.5 26.0 25.4 26.2 | 36 50 80 28 168 53 90 |\n| (D) | Varying dropout rates | 5.77 4.95 4.67 5.47 | 24.6 25.5 25.3 25.7 | - |\n| (E) | Learned positional embeddings instead of sinusoids | 4.92 | 25.7 | - |\n| big | N = 6, d_model = 1024, d_ff = 4096, h = 16, drop = 0.3, steps = 300K | 4.33 | 26.4 | 213 |\n\n### Conceptual Insights from Model Variations:\n\n* **Attention Heads (Rows A):** Varying the number of attention heads and the attention key and value dimensions while keeping the amount of computation constant shows that while single-head attention performs 0.9 BLEU worse than the best setting, quality also drops off when using too many heads.\n* **Attention Key Size (Rows B):** Reducing the attention key size (d_k) hurts model quality, suggesting that determining compatibility is not easy and a more sophisticated compatibility function than dot product may be beneficial.\n* **Model Size and Dropout (Rows C and D):** Bigger models perform better, and dropout is very helpful in avoiding over-fitting.\n* **Positional Encoding (Row E):** Replacing sinusoidal positional encoding with learned positional embeddings yields nearly identical results to the base model.",
+          "lead": "To evaluate the importance of different components of the Transformer, the base model was varied in different ways, and the change in performance was measured on English-to-German translation on the development set, newstest2013, using beam search without checkpoint averaging. The architecture variations and their results from Table 3 are presented below. Unlisted values are identical to those of the base model. Listed perplexities are per-wordpiece, according to byte-pair encoding. | Model Variation | Configuration / Changes | PPL (dev) | BLEU (dev) | Parameters (Millions) | |---|---|---|---|---| | base | N = 6, d_model = 512, d_ff = 2048, h = 8, d_k = 64, d_v = 64, drop = 0.1, ls = 0.1, steps = 100K | 4.92 | 25.8 | 65 | | (A) | Varying number of attention heads and key/value dimensions while keeping computation constant | 5.29 5.00 4.91 5.01 | 24.9 25.5 25.8 25.4 | - | | (B) | Reducing attention key size d_k | 5.16 5.01 | 25.1 25.4 | 58 60 | | (C) | Varying model sizes and dimensions | 6.11 5.19 4.88 5.75 4.66 5.12 4.75 | 23.7 25.3 25.5 24.5 26.0 25.4 26.2 | 36 50 80 28 168 53 90 | | (D) | Varying dropout rates | 5.77 4.95 4.67 5.47 | 24.6 25.5 25.3 25.7 | - | | (E) | Learned positional embeddings instead of sinusoids | 4.92 | 25.7 | - | | big | N = 6, d_model = 1024, d_ff = 4096, h = 16, drop = 0.3, steps = 300K | 4.33 | 26.4 | 213 | ### Conceptual Insights from Model Variations:",
+          "keyPoints": [
+            "**Attention Heads (Rows A):** Varying the number of attention heads and the attention key and value dimensions while keeping the amount of computation constant shows that while single-head attention performs 0.9 BLEU worse than the best setting, quality also drops off when using too many heads.",
+            "**Attention Key Size (Rows B):** Reducing the attention key size (d_k) hurts model quality, suggesting that determining compatibility is not easy and a more sophisticated compatibility function than dot product may be beneficial.",
+            "**Model Size and Dropout (Rows C and D):** Bigger models perform better, and dropout is very helpful in avoiding over-fitting.",
+            "**Positional Encoding (Row E):** Replacing sinusoidal positional encoding with learned positional embeddings yields nearly identical results to the base model."
+          ],
+          "stats": {
+            "responseTime": "13.31s",
+            "sourcesUsed": 1,
+            "retrievalStrength": "High"
+          },
+          "sources": [
+            {
+              "id": 1,
+              "source_name": "Test.pdf",
+              "page": "Pages 8-9",
+              "page_start": 8,
+              "page_end": 9,
+              "snippet": "[Document: Test.pdf | Section: 6.2 Model Variations | Page 8] To evaluate the importance of different components of the Transformer, we varied our base model ..."
+            }
+          ]
+        },
+        "error": null,
+        "timestamp": "01:33 am"
+      },
+      {
+        "id": "u-1794513886316-edmz",
+        "role": "user",
+        "text": "Attention Visualisation",
+        "timestamp": "01:34 am"
+      },
+      {
+        "id": "a-1794513886316-tapy",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": true,
+          "answer": "Information regarding attention visualizations is illustrated in the provided visual figures and diagrams from the text:![Figure 3: An example of the attention mechanism following long-distance dependencies in the](/api/documents/images/9445dbf864e9c6aa2ad906b3d00d87a7a3085fa28a5e9e4372cbecc5674516de/page_13_fig_04.png)\n\n* **Long-Distance Dependencies (Figure 3):** This visualization demonstrates how multi-head self-attention mechanisms in Transformer architectures capture long-range syntactic and semantic dependencies within text. Specific attention heads connect related concepts across many intervening tokens, such as linking the word \"making\" to its phrasal complement \"more difficult\".![Figure 5: Many of the attention heads exhibit behaviour that seems related to the structure of the](/api/documents/images/9445dbf864e9c6aa2ad906b3d00d87a7a3085fa28a5e9e4372cbecc5674516de/page_15_fig_06.png)\n\n* **Attention Head Specialization (Figure 5):** This visualization displays attention weights for two distinct attention heads within a trained model layer. It illustrates that different attention heads within the same layer learn to focus on completely different linguistic patterns, syntactic relationships, or structural features of a sentence. Darker and thicker lines represent stronger attention weights between source and target tokens.",
+          "lead": "Information regarding attention visualizations is illustrated in the provided visual figures and diagrams from the text:![Figure 3: An example of the attention mechanism following long-distance dependencies in the](/api/documents/images/9445dbf864e9c6aa2ad906b3d00d87a7a3085fa28a5e9e4372cbecc5674516de/page_13_fig_04.png)",
+          "keyPoints": [
+            "**Long-Distance Dependencies (Figure 3):** This visualization demonstrates how multi-head self-attention mechanisms in Transformer architectures capture long-range syntactic and semantic dependencies within text. Specific attention heads connect related concepts across many intervening tokens, such as linking the word \"making\" to its phrasal complement \"more difficult\".",
+            "**Attention Head Specialization (Figure 5):** This visualization displays attention weights for two distinct attention heads within a trained model layer. It illustrates that different attention heads within the same layer learn to focus on completely different linguistic patterns, syntactic relationships, or structural features of a sentence. Darker and thicker lines represent stronger attention weights between source and target tokens."
+          ],
+          "stats": {
+            "responseTime": "6.88s",
+            "sourcesUsed": 3,
+            "retrievalStrength": "High"
+          },
+          "sources": [
+            {
+              "id": 1,
+              "source_name": "Test.pdf",
+              "page": "Page 4",
+              "page_start": 4,
+              "page_end": 4,
+              "snippet": "[Document: Test.pdf | Visual Figure: Figure 2: (left) Scaled Dot-Product Attention. (right) Multi-Head Attention consists of several | Page 4] ..."
+            },
+            {
+              "id": 2,
+              "source_name": "Test.pdf",
+              "page": "Page 13",
+              "page_start": 13,
+              "page_end": 13,
+              "snippet": "... Even when words are separated by many intervening tokens, specific attention heads learn to link related concepts together—in this case, connecting the participle *\"making\"* to its phrasal complement *\"more difficult\"* to preserve the semantic unit across the sentence structure. ### 4. ..."
+            },
+            {
+              "id": 3,
+              "source_name": "Test.pdf",
+              "page": "Page 15",
+              "page_start": 15,
+              "page_end": 15,
+              "snippet": "... Summary of Key Takeaways This figure illustrates that different attention heads within the same layer of a Transformer model learn to perform distinct tasks and capture different structural relationships within a sentence. ..."
+            }
+          ]
+        },
+        "error": null,
+        "timestamp": "01:34 am"
+      }
+    ],
+    "created_at": "2026-11-12T20:04:53.201378+00:00",
+    "updated_at": "2026-11-12T20:04:53.201378+00:00"
+  },
+  {
+    "id": "chat_1794512928218",
+    "user_id": "112675643328808722449",
+    "user_email": "ritikkr274@gmail.com",
+    "title": "Regularization",
+    "messages": [
+      {
+        "id": "u-1794512925200-72oc",
+        "role": "user",
+        "text": "Regularization",
+        "timestamp": "01:18 am"
+      },
+      {
+        "id": "a-1794512925200-yr6l",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": true,
+          "answer": "Based on the provided context, the model employs three types of regularization during training, which include the following:\n\n* **Residual Dropout:** Dropout is applied to the output of each sub-layer before it is added to the sub-layer input and normalized. Additionally, dropout is applied to the sums of the embeddings and the positional encodings in both the encoder and decoder stacks. For the base model, a dropout rate of Pdrop = 0.1 is used.\n* **Label Smoothing:** During training, label smoothing of value eps_ls = 0.1 is employed. This hurts perplexity because the model learns to be more unsure, but it improves accuracy and the BLEU score.",
+          "lead": "Based on the provided context, the model employs three types of regularization during training, which include the following:",
+          "keyPoints": [
+            "**Residual Dropout:** Dropout is applied to the output of each sub-layer before it is added to the sub-layer input and normalized. Additionally, dropout is applied to the sums of the embeddings and the positional encodings in both the encoder and decoder stacks. For the base model, a dropout rate of Pdrop = 0.1 is used.",
+            "**Label Smoothing:** During training, label smoothing of value eps_ls = 0.1 is employed. This hurts perplexity because the model learns to be more unsure, but it improves accuracy and the BLEU score."
+          ],
+          "stats": {
+            "responseTime": "3.00s",
+            "sourcesUsed": 1,
+            "retrievalStrength": "High"
+          },
+          "sources": [
+            {
+              "id": 1,
+              "source_name": "Test.pdf",
+              "page": "Pages 7-8",
+              "page_start": 7,
+              "page_end": 8,
+              "snippet": "[Document: Test.pdf | Section: 5.4 Regularization | Page 7] We employ three types of regularization during training: ..."
+            }
+          ]
+        },
+        "error": null,
+        "timestamp": "01:18 am"
+      },
+      {
+        "id": "u-1794512944575-25rx",
+        "role": "user",
+        "text": "Regularization table",
+        "timestamp": "01:19 am"
+      },
+      {
+        "id": "a-1794512944575-6y6f",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": true,
+          "answer": "Based on the provided documents, Table 2 appears physically within Section 5.4 (Regularization), but it actually reports machine translation results (BLEU scores and training costs on English-to-German and English-to-French newstest2014 tests) rather than regularization data. \n\nHere is the complete data from Table 2:\n\n| Model | BLEU | Training Cost (FLOPs) |\n|---|---|---|\n| | EN-DE | EN-FR | EN-DE | EN-FR |\n| ByteNet | 23.75 | | 1.0 * 10^20 | |\n| Deep-Att + PosUnk | 39.2 | | | 8.0 * 10^20 |\n| GNMT + RL | 24.6 | 39.92 | 2.3 * 10^19 | 1.4 * 10^20 |\n| ConvS2S | 25.16 | 40.46 | 9.6 * 10^18 | 1.5 * 10^20 |\n| MoE | 26.03 | 40.56 | 2.0 * 10^19 | 1.2 * 10^20 |\n| Deep-Att + PosUnk Ensemble | | 40.4 | | 8.0 * 10^20 |\n| GNMT + RL Ensemble | 26.30 | 41.16 | 1.8 * 10^20 | 1.1 * 10^21 |\n| ConvS2S Ensemble | 26.36 | **41.29** | 7.7 * 10^19 | 1.2 * 10^21 |\n| Transformer (base model) | 27.3 | 38.1 | **3**.**3**_**·**_**10** **** | |\n| Transformer (big) | **28.4** | **41.8** | 2.3 * 10^19 | |",
+          "lead": "Based on the provided documents, Table 2 appears physically within Section 5.4 (Regularization), but it actually reports machine translation results (BLEU scores and training costs on English-to-German and English-to-French newstest2014 tests) rather than regularization data. \n\nHere is the complete data from Table 2:\n\n| Model | BLEU | Training Cost (FLOPs) |\n|---|---|---|\n| | EN-DE | EN-FR | EN-DE | EN-FR |\n| ByteNet | 23.75 | | 1.0 * 10^20 | |\n| Deep-Att + PosUnk | 39.2 | | | 8.0 * 10^20 |\n| GNMT + RL | 24.6 | 39.92 | 2.3 * 10^19 | 1.4 * 10^20 |\n| ConvS2S | 25.16 | 40.46 | 9.6 * 10^18 | 1.5 * 10^20 |\n| MoE | 26.03 | 40.56 | 2.0 * 10^19 | 1.2 * 10^20 |\n| Deep-Att + PosUnk Ensemble | | 40.4 | | 8.0 * 10^20 |\n| GNMT + RL Ensemble | 26.30 | 41.16 | 1.8 * 10^20 | 1.1 * 10^21 |\n| ConvS2S Ensemble | 26.36 | **41.29** | 7.7 * 10^19 | 1.2 * 10^21 |\n| Transformer (base model) | 27.3 | 38.1 | **3**.**3**_**·**_**10** **** | |\n| Transformer (big) | **28.4** | **41.8** | 2.3 * 10^19 | |",
+          "keyPoints": [],
+          "stats": {
+            "responseTime": "2.88s",
+            "sourcesUsed": 2,
+            "retrievalStrength": "High"
+          },
+          "sources": [
+            {
+              "id": 1,
+              "source_name": "Test.pdf",
+              "page": "Pages 7-8",
+              "page_start": 7,
+              "page_end": 8,
+              "snippet": "... ByteNet [18] 23.75 Deep-Att + PosUnk [39] 39.2 1 _._ 0 _·_ 10 [20]"
+            },
+            {
+              "id": 2,
+              "source_name": "Test.pdf",
+              "page": "Page 8",
+              "page_start": 8,
+              "page_end": 8,
+              "snippet": "... On the WMT 2014 English-to-German translation task, the big transformer model (Transformer (big) in Table 2) outperforms the best previously reported models (including ensembles) by more than 2 _._ 0 ..."
+            }
+          ]
+        },
+        "error": null,
+        "timestamp": "01:19 am"
+      },
+      {
+        "id": "u-1794513120691-e5iw",
+        "role": "user",
+        "text": "Explain Model variation",
+        "timestamp": "01:22 am"
+      },
+      {
+        "id": "a-1794513120691-lm5k",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": true,
+          "answer": "Based on the provided document, the model variations evaluated on the Transformer architecture (measured on the English-to-German translation development set, newstest2013) are detailed as follows:\n\n* **Table 3 Data:**\n  The complete data from Table 3 showing the variations on the Transformer architecture is rendered below:\n\n|Col1|train<br>N d d h d d P ε<br>model ff k v drop ls steps|PPL BLEU params<br>(dev) (dev) ×106|\n|---|---|---|\n|base|6<br>512<br>2048<br>8<br>64<br>64<br>0.1<br>0.1<br>100K|4.92<br>25.8<br>65|\n|(A)|1<br>512<br>512<br>4<br>128<br>128<br>16<br>32<br>32<br>32<br>16<br>16|5.29<br>24.9<br>5.00<br>25.5<br>4.91<br>25.8<br>5.01<br>25.4|\n|(B)|16<br>32|5.16<br>25.1<br>58<br>5.01<br>25.4<br>60|\n|(C)|2<br>4<br>8<br>256<br>32<br>32<br>1024<br>128<br>128<br>1024<br>4096|6.11<br>23.7<br>36<br>5.19<br>25.3<br>50<br>4.88<br>25.5<br>80<br>5.75<br>24.5<br>28<br>4.66<br>26.0<br>168<br>5.12<br>25.4<br>53<br>4.75<br>26.2<br>90|\n|(D)|0.0<br>0.2<br>0.0<br>0.2|5.77<br>24.6<br>4.95<br>25.5<br>4.67<br>25.3<br>5.47<br>25.7|\n|(E)|positional embedding instead of sinusoids|4.92<br>25.7|\n|big|6<br>1024<br>4096<br>16<br>0.3<br>300K|**4.33**<br>**26.4**<br>213|\n\n* **Attention Heads and Dimensions (Rows A):** Varying the number of attention heads and the attention key and value dimensions while keeping computation constant showed that single-head attention performs 0.9 BLEU worse than the best setting, while quality also drops off when using too many heads.\n* **Attention Key Size (Rows B):** Reducing the attention key size (dk) hurts model quality, suggesting that determining compatibility is not easy and that a more sophisticated compatibility function than dot product might be beneficial.\n* **Model Size and Dropout (Rows C and D):** Results confirm that bigger models perform better and that dropout is very helpful in avoiding over-fitting.\n* **Positional Encoding (Row E):** Replacing the sinusoidal positional encoding with learned positional embeddings yields nearly identical results to the base model.",
+          "lead": "Based on the provided document, the model variations evaluated on the Transformer architecture (measured on the English-to-German translation development set, newstest2013) are detailed as follows:",
+          "keyPoints": [
+            "**Table 3 Data:**",
+            "**Attention Heads and Dimensions (Rows A):** Varying the number of attention heads and the attention key and value dimensions while keeping computation constant showed that single-head attention performs 0.9 BLEU worse than the best setting, while quality also drops off when using too many heads.",
+            "**Attention Key Size (Rows B):** Reducing the attention key size (dk) hurts model quality, suggesting that determining compatibility is not easy and that a more sophisticated compatibility function than dot product might be beneficial.",
+            "**Model Size and Dropout (Rows C and D):** Results confirm that bigger models perform better and that dropout is very helpful in avoiding over-fitting.",
+            "**Positional Encoding (Row E):** Replacing the sinusoidal positional encoding with learned positional embeddings yields nearly identical results to the base model."
+          ],
+          "stats": {
+            "responseTime": "12.21s",
+            "sourcesUsed": 1,
+            "retrievalStrength": "High"
+          },
+          "sources": [
+            {
+              "id": 1,
+              "source_name": "Test.pdf",
+              "page": "Page 9",
+              "page_start": 9,
+              "page_end": 9,
+              "snippet": "[Document: Test.pdf | Section: 6.2 Model Variations | Page 9] In Table 3 rows (B), we observe that reducing the attention key size _dk_ hurts model quality. ..."
+            }
+          ]
+        },
+        "error": null,
+        "timestamp": "01:22 am"
+      }
+    ],
+    "created_at": "2026-11-12T19:52:12.910619+00:00",
+    "updated_at": "2026-11-12T19:52:12.910619+00:00"
+  },
+  {
+    "id": "chat_1794511660944",
+    "user_id": "112675643328808722449",
+    "user_email": "ritikkr274@gmail.com",
+    "title": "Regularization",
+    "messages": [
+      {
+        "id": "u-1794511655716-md9r",
+        "role": "user",
+        "text": "Regularization",
+        "timestamp": "12:57 am"
+      },
+      {
+        "id": "a-1794511655716-96hg",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": true,
+          "answer": "Based on the provided document, three types of regularization are employed during training:\n\n* **Residual Dropout:** Dropout is applied to the output of each sub-layer, before it is added to the sub-layer input and normalized. Additionally, dropout is applied to the sums of the embeddings and the positional encodings in both the encoder and decoder stacks. For the base model, a rate of Pdrop = 0.1 is used.\n* **Label Smoothing:** During training, label smoothing of value els = 0.1 is employed. This hurts perplexity because the model learns to be more unsure, but it improves accuracy and BLEU score.",
+          "lead": "Based on the provided document, three types of regularization are employed during training:",
+          "keyPoints": [
+            "**Residual Dropout:** Dropout is applied to the output of each sub-layer, before it is added to the sub-layer input and normalized. Additionally, dropout is applied to the sums of the embeddings and the positional encodings in both the encoder and decoder stacks. For the base model, a rate of Pdrop = 0.1 is used.",
+            "**Label Smoothing:** During training, label smoothing of value els = 0.1 is employed. This hurts perplexity because the model learns to be more unsure, but it improves accuracy and BLEU score."
+          ],
+          "stats": {
+            "responseTime": "5.21s",
+            "sourcesUsed": 1,
+            "retrievalStrength": "High"
+          },
+          "sources": [
+            {
+              "id": 1,
+              "source_name": "Test.pdf",
+              "page": "Pages 7-8",
+              "page_start": 7,
+              "page_end": 8,
+              "snippet": "[Document: Test.pdf | Section: 5.4 Regularization | Page 7] We employ three types of regularization during training: ..."
+            }
+          ]
+        },
+        "error": null,
+        "timestamp": "12:57 am"
+      }
+    ],
+    "created_at": "2026-11-12T19:27:40.951136+00:00",
+    "updated_at": "2026-11-12T19:27:40.951136+00:00"
+  },
+  {
+    "id": "chat_1794428992249",
+    "user_id": "112675643328808722449",
+    "user_email": "ritikkr274@gmail.com",
+    "title": "Explain optimizewr",
+    "messages": [
+      {
+        "id": "u-1794428988451-ksyd",
+        "role": "user",
+        "text": "Explain optimizewr",
+        "timestamp": "01:59 am"
+      },
+      {
+        "id": "a-1794428988451-ip5v",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": false,
+          "answer": "Information regarding this topic was not found in the uploaded documents.",
+          "lead": "Information regarding this topic was not found in the uploaded documents.",
+          "keyPoints": [],
+          "stats": {
+            "responseTime": "3.79s",
+            "sourcesUsed": 0,
+            "retrievalStrength": "High"
+          },
+          "sources": []
+        },
+        "error": null,
+        "timestamp": "01:59 am"
+      },
+      {
+        "id": "u-1794429008489-rlon",
+        "role": "user",
+        "text": "Explain optimizer",
+        "timestamp": "02:00 am"
+      },
+      {
+        "id": "a-1794429008489-4cab",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": true,
+          "answer": "* **Optimizer Used:** The Adam optimizer was used with parameters beta_1 = 0.9, beta_2 = 0.98, and epsilon = 10^(-9).\n* **Learning Rate Schedule:** The learning rate was varied over the course of training according to the formula:\n  \n  lrate = d_model^(-0.5) * min(step_num^(-0.5), step_num * warmup_steps^(-1.5))\n\n* **Training Behavior:** This schedule corresponds to increasing the learning rate linearly for the first warmup_steps training steps, and decreasing it thereafter proportionally to the inverse square root of the step number.\n* **Warmup Steps:** warmup_steps was set to 4000.",
+          "lead": "* **Optimizer Used:** The Adam optimizer was used with parameters beta_1 = 0.9, beta_2 = 0.98, and epsilon = 10^(-9).",
+          "keyPoints": [
+            "**Optimizer Used:** The Adam optimizer was used with parameters beta_1 = 0.9, beta_2 = 0.98, and epsilon = 10^(-9).",
+            "**Learning Rate Schedule:** The learning rate was varied over the course of training according to the formula:",
+            "**Training Behavior:** This schedule corresponds to increasing the learning rate linearly for the first warmup_steps training steps, and decreasing it thereafter proportionally to the inverse square root of the step number.",
+            "**Warmup Steps:** warmup_steps was set to 4000."
+          ],
+          "stats": {
+            "responseTime": "2.48s",
+            "sourcesUsed": 1,
+            "retrievalStrength": "High"
+          },
+          "sources": [
+            {
+              "id": 1,
+              "source_name": "Test.pdf",
+              "page": "Page 7",
+              "page_start": 7,
+              "page_end": 7,
+              "snippet": "... We varied the learning rate over the course of training, according to the formula:"
+            }
+          ]
+        },
+        "error": null,
+        "timestamp": "02:00 am"
+      },
+      {
+        "id": "u-1794429051033-zs2r",
+        "role": "user",
+        "text": "Explain positional Encoding",
+        "timestamp": "02:00 am"
+      },
+      {
+        "id": "a-1794429051033-u2xe",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": true,
+          "answer": "Based on the provided documents, here is the explanation of positional encoding:\n\n* **Purpose:** Because the Transformer model contains no recurrence and no convolution, positional encodings are injected into the input embeddings at the bottoms of the encoder and decoder stacks to provide the model with information about the relative or absolute position of tokens in the sequence.\n* **Dimensions:** Positional encodings have the same dimension as the embeddings (d_model), allowing the two to be summed together.\n* **Formulation:** The model uses sine and cosine functions of different frequencies:\n  * PE (pos, 2i) = sin (pos / 10000^(2i / d_model))\n  * PE (pos, 2i+1) = cos (pos / 10000^(2i / d_model))\n  where *pos* is the position and *i* is the dimension.\n* **Wavelengths and Rationale:** The wavelengths form a geometric progression from 2 * pi to 10000 * 2 * pi. This function was chosen because it was hypothesized to allow the model to easily learn to attend by relative positions, as for any fixed offset *k*, PE(pos + k) can be represented as a linear function of PE(pos).\n* **Alternative Approaches:** The authors also experimented with learned positional embeddings and found that they produced nearly identical results to the sinusoidal version. The sinusoidal version was chosen because it may allow the model to extrapolate to sequence lengths longer than those encountered during training.",
+          "lead": "Based on the provided documents, here is the explanation of positional encoding:",
+          "keyPoints": [
+            "**Purpose:** Because the Transformer model contains no recurrence and no convolution, positional encodings are injected into the input embeddings at the bottoms of the encoder and decoder stacks to provide the model with information about the relative or absolute position of tokens in the sequence.",
+            "**Dimensions:** Positional encodings have the same dimension as the embeddings (d_model), allowing the two to be summed together.",
+            "**Formulation:** The model uses sine and cosine functions of different frequencies:",
+            "PE (pos, 2i) = sin (pos / 10000^(2i / d_model))",
+            "PE (pos, 2i+1) = cos (pos / 10000^(2i / d_model))",
+            "**Wavelengths and Rationale:** The wavelengths form a geometric progression from 2 * pi to 10000 * 2 * pi. This function was chosen because it was hypothesized to allow the model to easily learn to attend by relative positions, as for any fixed offset *k*, PE(pos + k) can be represented as a linear function of PE(pos).",
+            "**Alternative Approaches:** The authors also experimented with learned positional embeddings and found that they produced nearly identical results to the sinusoidal version. The sinusoidal version was chosen because it may allow the model to extrapolate to sequence lengths longer than those encountered during training."
+          ],
+          "stats": {
+            "responseTime": "3.13s",
+            "sourcesUsed": 2,
+            "retrievalStrength": "High"
+          },
+          "sources": [
+            {
+              "id": 1,
+              "source_name": "Test.pdf",
+              "page": "Page 6",
+              "page_start": 6,
+              "page_end": 6,
+              "snippet": "... bottoms of the encoder and decoder stacks. The positional encodings have the same dimension _d_ model ..."
+            },
+            {
+              "id": 2,
+              "source_name": "Test.pdf",
+              "page": "Page 9",
+              "page_start": 9,
+              "page_end": 9,
+              "snippet": "... sinusoidal positional encoding with learned positional embeddings [9], and observe nearly identical results to the base model."
+            }
+          ]
+        },
+        "error": null,
+        "timestamp": "02:00 am"
+      },
+      {
+        "id": "u-1794429092738-041v",
+        "role": "user",
+        "text": "value of Pdrop in Residual Dropout",
+        "timestamp": "02:01 am"
+      },
+      {
+        "id": "a-1794429092738-ng2w",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": true,
+          "answer": "Based on the provided document, the value of Pdrop used for the base model in Residual Dropout is:\n\n* **Pdrop = 0.1**",
+          "lead": "Based on the provided document, the value of Pdrop used for the base model in Residual Dropout is:",
+          "keyPoints": [
+            "**Pdrop = 0.1**"
+          ],
+          "stats": {
+            "responseTime": "2.09s",
+            "sourcesUsed": 1,
+            "retrievalStrength": "High"
+          },
+          "sources": [
+            {
+              "id": 1,
+              "source_name": "Test.pdf",
+              "page": "Page 8",
+              "page_start": 8,
+              "page_end": 8,
+              "snippet": "... **Residual Dropout** We apply dropout [33] to the output of each sub-layer, before it is added to the sub-layer input and normalized. ..."
+            }
+          ]
+        },
+        "error": null,
+        "timestamp": "02:01 am"
+      }
+    ],
+    "created_at": "2026-11-11T20:31:34.831704+00:00",
+    "updated_at": "2026-11-11T20:31:34.831704+00:00"
+  },
+  {
+    "id": "chat_1794427131148",
+    "user_id": "112675643328808722449",
+    "user_email": "ritikkr274@gmail.com",
+    "title": "Explain this Document",
+    "messages": [
+      {
+        "id": "u-1794427127322-7u4q",
+        "role": "user",
+        "text": "Explain this Document",
+        "timestamp": "01:28 am"
+      },
+      {
+        "id": "a-1794427127322-intp",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": true,
+          "answer": "Based on the provided documents, the content consists of several visual figures and educational illustrations spanning different topics. Below is a breakdown of the figures found in the documents:\n\n*   **Figure 2 (Page 1):** A Quick Response (QR) Code accompanied by the alphanumeric identifier `0677CH01`, used to bridge printed material with digital learning resources.![Figure 2 (Page 1)](/api/documents/images/a47220e3f7449c32009df88ec3da3368a762bc6646b4fe608811e47ebbf1e3b6/page_1_fig_02.png)\n\n*   **Figure 5 (Page 2):** A digital landscape illustration depicting a tropical coastal environment, including a sandy beach, wave action, a rocky shoreline embankment, and coastal vegetation on a cliff.![Figure 5 (Page 2)](/api/documents/images/a47220e3f7449c32009df88ec3da3368a762bc6646b4fe608811e47ebbf1e3b6/page_2_fig_05.jpeg)\n\n*   **Figure 8 (Page 3):** An educational biological illustration depicting mammalian lactation and maternal-offspring bonding, showing a mother cow nursing her calf in a pasture.![Figure 8 (Page 3)](/api/documents/images/a47220e3f7449c32009df88ec3da3368a762bc6646b4fe608811e47ebbf1e3b6/page_3_fig_08.jpeg)\n\n*   **Figure 19 (Page 6):** A scientific/educational illustration demonstrating a household pressure cooker overflowing on a gas stove due to a blocked steam release vent.![Figure 19 (Page 6)](/api/documents/images/a47220e3f7449c32009df88ec3da3368a762bc6646b4fe608811e47ebbf1e3b6/page_6_fig_19.jpeg)",
+          "lead": "Based on the provided documents, the content consists of several visual figures and educational illustrations spanning different topics. Below is a breakdown of the figures found in the documents:",
+          "keyPoints": [
+            "**Figure 2 (Page 1):** A Quick Response (QR) Code accompanied by the alphanumeric identifier `0677CH01`, used to bridge printed material with digital learning resources.",
+            "**Figure 5 (Page 2):** A digital landscape illustration depicting a tropical coastal environment, including a sandy beach, wave action, a rocky shoreline embankment, and coastal vegetation on a cliff.",
+            "**Figure 8 (Page 3):** An educational biological illustration depicting mammalian lactation and maternal-offspring bonding, showing a mother cow nursing her calf in a pasture.",
+            "**Figure 19 (Page 6):** A scientific/educational illustration demonstrating a household pressure cooker overflowing on a gas stove due to a blocked steam release vent."
+          ],
+          "stats": {
+            "responseTime": "3.79s",
+            "sourcesUsed": 4,
+            "retrievalStrength": "High"
+          },
+          "sources": [
+            {
+              "id": 1,
+              "source_name": "Test1.pdf",
+              "page": "Page 1",
+              "page_start": 1,
+              "page_end": 1,
+              "snippet": "[Document: Test1.pdf | Visual Figure: Figure 2 (Page 1) | Page 1] ![Figure 2 (Page 1)](/api/documents/images/a47220e3f7449c32009df88ec3da3368a762bc6646b4fe608811e47ebbf1e3b6/page_1_fig_02.png) ..."
+            },
+            {
+              "id": 2,
+              "source_name": "Test1.pdf",
+              "page": "Page 2",
+              "page_start": 2,
+              "page_end": 2,
+              "snippet": "... Type of Visual This is a **digital landscape illustration** (scenic drawing) depicting a tropical coastal environment, likely intended for an educational or textbook setting to illustrate geographical features such as a coast, shoreline, cliff, and coastal vegetation. ..."
+            },
+            {
+              "id": 3,
+              "source_name": "Test1.pdf",
+              "page": "Page 3",
+              "page_start": 3,
+              "page_end": 3,
+              "snippet": "[Document: Test1.pdf | Visual Figure: Figure 8 (Page 3) | Page 3] ![Figure 8 (Page 3)](/api/documents/images/a47220e3f7449c32009df88ec3da3368a762bc6646b4fe608811e47ebbf1e3b6/page_3_fig_08.jpeg) ..."
+            },
+            {
+              "id": 4,
+              "source_name": "Test1.pdf",
+              "page": "Page 6",
+              "page_start": 6,
+              "page_end": 6,
+              "snippet": "[Document: Test1.pdf | Visual Figure: Figure 19 (Page 6) | Page 6] ![Figure 19 (Page 6)](/api/documents/images/a47220e3f7449c32009df88ec3da3368a762bc6646b4fe608811e47ebbf1e3b6/page_6_fig_19.jpeg) ..."
+            }
+          ]
+        },
+        "error": null,
+        "timestamp": "01:28 am"
+      },
+      {
+        "id": "u-1794427271293-77tk",
+        "role": "user",
+        "text": "Explain Regularization",
+        "timestamp": "01:31 am"
+      },
+      {
+        "id": "a-1794427271293-frlh",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": false,
+          "answer": "Information regarding this topic was not found in the uploaded documents.",
+          "lead": "Information regarding this topic was not found in the uploaded documents.",
+          "keyPoints": [],
+          "stats": {
+            "responseTime": "5.36s",
+            "sourcesUsed": 0,
+            "retrievalStrength": "High"
+          },
+          "sources": []
+        },
+        "error": null,
+        "timestamp": "01:31 am"
+      },
+      {
+        "id": "u-1794427301332-51da",
+        "role": "user",
+        "text": "Regularization",
+        "timestamp": "01:31 am"
+      },
+      {
+        "id": "a-1794427301332-9rpr",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": true,
+          "answer": "Based on the provided document, three types of regularization are employed during training:\n\n* **Residual Dropout:** Dropout is applied to the output of each sub-layer, before it is added to the sub-layer input and normalized [5.4]. Dropout is also applied to the sums of the embeddings and the positional encodings in both the encoder and decoder stacks [5.4]. For the base model, a rate of Pdrop = 0.1 is used [5.4].\n* **Label Smoothing:** During training, label smoothing of value els = 0.1 is employed [5.4]. While this hurts perplexity because the model learns to be more unsure, it improves accuracy and BLEU score [5.4].",
+          "lead": "Based on the provided document, three types of regularization are employed during training:",
+          "keyPoints": [
+            "**Residual Dropout:** Dropout is applied to the output of each sub-layer, before it is added to the sub-layer input and normalized [5.4]. Dropout is also applied to the sums of the embeddings and the positional encodings in both the encoder and decoder stacks [5.4]. For the base model, a rate of Pdrop = 0.1 is used [5.4].",
+            "**Label Smoothing:** During training, label smoothing of value els = 0.1 is employed [5.4]. While this hurts perplexity because the model learns to be more unsure, it improves accuracy and BLEU score [5.4]."
+          ],
+          "stats": {
+            "responseTime": "3.22s",
+            "sourcesUsed": 1,
+            "retrievalStrength": "High"
+          },
+          "sources": [
+            {
+              "id": 1,
+              "source_name": "Test.pdf",
+              "page": "Pages 7-8",
+              "page_start": 7,
+              "page_end": 8,
+              "snippet": "... **5.4** **Regularization** We employ three types of regularization during training: ..."
+            }
+          ]
+        },
+        "error": null,
+        "timestamp": "01:31 am"
+      },
+      {
+        "id": "u-1794427333379-ggql",
+        "role": "user",
+        "text": "Results",
+        "timestamp": "01:32 am"
+      },
+      {
+        "id": "a-1794427333379-pk71",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": false,
+          "answer": "Information regarding this topic was not found in the uploaded documents.",
+          "lead": "Information regarding this topic was not found in the uploaded documents.",
+          "keyPoints": [],
+          "stats": {
+            "responseTime": "5.18s",
+            "sourcesUsed": 0,
+            "retrievalStrength": "High"
+          },
+          "sources": []
+        },
+        "error": null,
+        "timestamp": "01:32 am"
+      },
+      {
+        "id": "u-1794427345889-j9m6",
+        "role": "user",
+        "text": "Results",
+        "timestamp": "01:32 am"
+      },
+      {
+        "id": "a-1794427345889-4ufy",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": false,
+          "answer": "Information regarding this topic was not found in the uploaded documents.",
+          "lead": "Information regarding this topic was not found in the uploaded documents.",
+          "keyPoints": [],
+          "stats": {
+            "responseTime": "2.93s",
+            "sourcesUsed": 0,
+            "retrievalStrength": "High"
+          },
+          "sources": []
+        },
+        "error": null,
+        "timestamp": "01:32 am"
+      },
+      {
+        "id": "u-1794427370762-5l5e",
+        "role": "user",
+        "text": "Explain Model Variations",
+        "timestamp": "01:32 am"
+      },
+      {
+        "id": "a-1794427370762-hqkg",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": true,
+          "answer": "To evaluate the importance of different components of the Transformer, the base model was varied in several ways, and the resulting changes in performance were measured on the English-to-German translation development set (newstest2013) [6.2].![Figure 1: The Transformer - model architecture.](/api/documents/images/9445dbf864e9c6aa2ad906b3d00d87a7a3085fa28a5e9e4372cbecc5674516de/page_3_fig_01.png)\n\nThe specific model variations and their findings include the following:\n\n* **Attention Heads and Dimensions (Table 3 rows A):** Varying the number of attention heads and the key/value dimensions while keeping the total amount of computation constant showed that single-head attention is 0.9 BLEU worse than the best setting, but quality also drops off when using too many heads [6.2].\n* **Attention Key Size (Table 3 rows B):** Reducing the attention key size (d_k) hurts model quality, suggesting that determining compatibility is not easy and that a more sophisticated compatibility function than dot product may be beneficial [6.2].\n* **Model Size and Regularization (Table 3 rows C and D):** Larger models perform better, and dropout is very helpful in avoiding over-fitting [6.2].\n* **Positional Encodings (Table 3 row E):** Replacing the sinusoidal positional encoding with learned positional embeddings produced nearly identical results to the base model [6.2].",
+          "lead": "To evaluate the importance of different components of the Transformer, the base model was varied in several ways, and the resulting changes in performance were measured on the English-to-German translation development set (newstest2013) [6.2].![Figure 1: The Transformer - model architecture.](/api/documents/images/9445dbf864e9c6aa2ad906b3d00d87a7a3085fa28a5e9e4372cbecc5674516de/page_3_fig_01.png) The specific model variations and their findings include the following:",
+          "keyPoints": [
+            "**Attention Heads and Dimensions (Table 3 rows A):** Varying the number of attention heads and the key/value dimensions while keeping the total amount of computation constant showed that single-head attention is 0.9 BLEU worse than the best setting, but quality also drops off when using too many heads [6.2].",
+            "**Attention Key Size (Table 3 rows B):** Reducing the attention key size (d_k) hurts model quality, suggesting that determining compatibility is not easy and that a more sophisticated compatibility function than dot product may be beneficial [6.2].",
+            "**Model Size and Regularization (Table 3 rows C and D):** Larger models perform better, and dropout is very helpful in avoiding over-fitting [6.2].",
+            "**Positional Encodings (Table 3 row E):** Replacing the sinusoidal positional encoding with learned positional embeddings produced nearly identical results to the base model [6.2]."
+          ],
+          "stats": {
+            "responseTime": "7.77s",
+            "sourcesUsed": 2,
+            "retrievalStrength": "High"
+          },
+          "sources": [
+            {
+              "id": 1,
+              "source_name": "Test.pdf",
+              "page": "Page 3",
+              "page_start": 3,
+              "page_end": 3,
+              "snippet": "[Document: Test.pdf | Visual Figure: Figure 1: The Transformer - model architecture. | Page 3] ![Figure 1: The Transformer - model architecture.](/api/documents/images/9445dbf864e9c6aa2ad906b3d00d87a7a3085fa28a5e9e4372cbecc5674516de/page_3_fig_01.png) ..."
+            },
+            {
+              "id": 2,
+              "source_name": "Test.pdf",
+              "page": "Page 8",
+              "page_start": 8,
+              "page_end": 8,
+              "snippet": "... To evaluate the importance of different components of the Transformer, we varied our base model in different ways, measuring the change in performance on English-to-German translation on the"
+            }
+          ]
+        },
+        "error": null,
+        "timestamp": "01:32 am"
+      },
+      {
+        "id": "u-1794427400246-fzcy",
+        "role": "user",
+        "text": "Explain Conclusion",
+        "timestamp": "01:33 am"
+      },
+      {
+        "id": "a-1794427400246-hysw",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": true,
+          "answer": "Information regarding the conclusion of the paper is detailed below:\n\n* The authors presented the Transformer, which is the first sequence transduction model based entirely on attention, replacing the recurrent layers most commonly used in encoder-decoder architectures with multi-headed self-attention [7].\n* For translation tasks, the Transformer can be trained significantly faster than architectures based on recurrent or convolutional layers [7].\n* On both the WMT 2014 English-to-German and WMT 2014 English-to-French translation tasks, the model achieves a new state of the art, and in the former task, the best model outperforms even all previously reported ensembles [7].\n* The authors expressed excitement about the future of attention-based models and stated plans to apply them to other tasks, including problems involving input and output modalities other than text, investigating local and restricted attention mechanisms to efficiently handle large inputs and outputs such as images, audio, and video, and making generation less sequential [7].\n* The code used to train and evaluate the models is available at https://github.com/tensorflow/tensor2tensor [7].",
+          "lead": "Information regarding the conclusion of the paper is detailed below:",
+          "keyPoints": [
+            "The authors presented the Transformer, which is the first sequence transduction model based entirely on attention, replacing the recurrent layers most commonly used in encoder-decoder architectures with multi-headed self-attention [7].",
+            "For translation tasks, the Transformer can be trained significantly faster than architectures based on recurrent or convolutional layers [7].",
+            "On both the WMT 2014 English-to-German and WMT 2014 English-to-French translation tasks, the model achieves a new state of the art, and in the former task, the best model outperforms even all previously reported ensembles [7].",
+            "The authors expressed excitement about the future of attention-based models and stated plans to apply them to other tasks, including problems involving input and output modalities other than text, investigating local and restricted attention mechanisms to efficiently handle large inputs and outputs such as images, audio, and video, and making generation less sequential [7].",
+            "The code used to train and evaluate the models is available at https://github.com/tensorflow/tensor2tensor [7]."
+          ],
+          "stats": {
+            "responseTime": "3.78s",
+            "sourcesUsed": 3,
+            "retrievalStrength": "High"
+          },
+          "sources": [
+            {
+              "id": 1,
+              "source_name": "Test.pdf",
+              "page": "Page 10",
+              "page_start": 10,
+              "page_end": 10,
+              "snippet": "... In this work, we presented the Transformer, the first sequence transduction model based entirely on attention, replacing the recurrent layers most commonly used in encoder-decoder architectures with ..."
+            },
+            {
+              "id": 2,
+              "source_name": "Test.pdf",
+              "page": "Page 13",
+              "page_start": 13,
+              "page_end": 13,
+              "snippet": "... Explain the Core Concept, Mechanism, or Principle This figure demonstrates the inner workings of **multi-head self-attention** in Transformer models (popularized by models like BERT or the Transformer encoder). ..."
+            },
+            {
+              "id": 3,
+              "source_name": "Test.pdf",
+              "page": "Page 4",
+              "page_start": 4,
+              "page_end": 4,
+              "snippet": "... This allows the model to jointly attend to information from different representation subspaces at different positions, enhancing the model's expressive power compared to single-head attention. ### 4. ..."
+            }
+          ]
+        },
+        "error": null,
+        "timestamp": "01:33 am"
+      },
+      {
+        "id": "u-1794427572247-zc5a",
+        "role": "user",
+        "text": "optimizer topic explain it",
+        "timestamp": "01:36 am"
+      },
+      {
+        "id": "a-1794427572247-cqik",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": true,
+          "answer": "Information regarding the optimizer topic is detailed below based on the uploaded documents:\n\n- **Optimizer Used:** The authors",
+          "lead": "Information regarding the optimizer topic is detailed below based on the uploaded documents:",
+          "keyPoints": [
+            "**Optimizer Used:** The authors"
+          ],
+          "stats": {
+            "responseTime": "6.70s",
+            "sourcesUsed": 2,
+            "retrievalStrength": "High"
+          },
+          "sources": [
+            {
+              "id": 1,
+              "source_name": "Test.pdf",
+              "page": "Page 7",
+              "page_start": 7,
+              "page_end": 7,
+              "snippet": "... **5.3** **Optimizer** We used the Adam optimizer [20] with _β_ 1 = 0 _._ 9, _β_ 2 = 0 _._ 98 and _ε_ = 10 _[−]_ [9] . ..."
+            },
+            {
+              "id": 2,
+              "source_name": "Test.pdf",
+              "page": "Page 13",
+              "page_start": 13,
+              "page_end": 13,
+              "snippet": "... Based on the provided image and caption, here is a detailed analysis following your guidelines: ### 1. ..."
+            }
+          ]
+        },
+        "error": null,
+        "timestamp": "01:36 am"
+      },
+      {
+        "id": "u-1794427636062-bsri",
+        "role": "user",
+        "text": "Explain Hardware and Schedule",
+        "timestamp": "01:37 am"
+      },
+      {
+        "id": "a-1794427636062-8wlr",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": true,
+          "answer": "Based on the provided document, the hardware and schedule details for training the models are as follows:\n\n* **Hardware Used:** Models were trained on one machine equipped with 8 NVIDIA P100 GPUs [5.2].\n* **Base Models Schedule:** For base models using the described hyperparameters, each training step took approximately 0.4 seconds [5.2]. These models were trained for a total of 100,000 steps, which took 12 hours [5.2].\n* **Big Models Schedule:** For the big models, the step time was 1.0 seconds [5.2]. These models were trained for 300,000 steps, which took 3.5 days [5.2].",
+          "lead": "Based on the provided document, the hardware and schedule details for training the models are as follows:",
+          "keyPoints": [
+            "**Hardware Used:** Models were trained on one machine equipped with 8 NVIDIA P100 GPUs [5.2].",
+            "**Base Models Schedule:** For base models using the described hyperparameters, each training step took approximately 0.4 seconds [5.2]. These models were trained for a total of 100,000 steps, which took 12 hours [5.2].",
+            "**Big Models Schedule:** For the big models, the step time was 1.0 seconds [5.2]. These models were trained for 300,000 steps, which took 3.5 days [5.2]."
+          ],
+          "stats": {
+            "responseTime": "3.23s",
+            "sourcesUsed": 2,
+            "retrievalStrength": "High"
+          },
+          "sources": [
+            {
+              "id": 1,
+              "source_name": "Test.pdf",
+              "page": "Page 7",
+              "page_start": 7,
+              "page_end": 7,
+              "snippet": "... target tokens. **5.2** **Hardware and Schedule**"
+            },
+            {
+              "id": 2,
+              "source_name": "Test.pdf",
+              "page": "Page 4",
+              "page_start": 4,
+              "page_end": 4,
+              "snippet": "... Based on the provided image and caption, here is a detailed analysis following your guidelines: ### 1. ..."
+            }
+          ]
+        },
+        "error": null,
+        "timestamp": "01:37 am"
+      },
+      {
+        "id": "u-1794427675219-9t5a",
+        "role": "user",
+        "text": "optimizer topic explain it",
+        "timestamp": "01:37 am"
+      },
+      {
+        "id": "a-1794427675219-wdwp",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": false,
+          "answer": "Information regarding this topic was not found in the uploaded documents.",
+          "lead": "Information regarding this topic was not found in the uploaded documents.",
+          "keyPoints": [],
+          "stats": {
+            "responseTime": "6.01s",
+            "sourcesUsed": 0,
+            "retrievalStrength": "High"
+          },
+          "sources": []
+        },
+        "error": null,
+        "timestamp": "01:37 am"
+      },
+      {
+        "id": "u-1794427700584-gb89",
+        "role": "user",
+        "text": "Optimizer topic explain it",
+        "timestamp": "01:38 am"
+      },
+      {
+        "id": "a-1794427700584-ec5u",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": true,
+          "answer": "Information regarding the optimizer used for training the model is detailed below:\n\n* **Optimizer Algorithm:** We used the Adam optimizer with beta_1 = 0.9, beta_2 = 0.98, and epsilon = 10^-9 [5.3].\n* **Learning Rate Schedule:** We varied the learning rate over the course of training according to the following formula [5.3]:\n\nlrate = d_model^(-0.5) * min(step_num^(-0.5), step_num * warmup_steps^(-1.5))\n\n* **Warmup Steps:** We used warmup_steps = 4000 [5.3]. This corresponds to increasing the learning rate linearly for the first warmup_steps training steps, and decreasing it thereafter proportionally to the inverse square root of the step number [5.3].",
+          "lead": "Information regarding the optimizer used for training the model is detailed below:",
+          "keyPoints": [
+            "**Optimizer Algorithm:** We used the Adam optimizer with beta_1 = 0.9, beta_2 = 0.98, and epsilon = 10^-9 [5.3].",
+            "**Learning Rate Schedule:** We varied the learning rate over the course of training according to the following formula [5.3]:",
+            "**Warmup Steps:** We used warmup_steps = 4000 [5.3]. This corresponds to increasing the learning rate linearly for the first warmup_steps training steps, and decreasing it thereafter proportionally to the inverse square root of the step number [5.3]."
+          ],
+          "stats": {
+            "responseTime": "25.21s",
+            "sourcesUsed": 2,
+            "retrievalStrength": "High"
+          },
+          "sources": [
+            {
+              "id": 1,
+              "source_name": "Test.pdf",
+              "page": "Page 7",
+              "page_start": 7,
+              "page_end": 7,
+              "snippet": "... We varied the learning rate over the course of training, according to the formula:"
+            },
+            {
+              "id": 2,
+              "source_name": "Test.pdf",
+              "page": "Page 13",
+              "page_start": 13,
+              "page_end": 13,
+              "snippet": "... Based on the provided image and caption, here is a detailed analysis following your guidelines: ### 1. ..."
+            }
+          ]
+        },
+        "error": null,
+        "timestamp": "01:38 am"
+      }
+    ],
+    "created_at": "2026-11-11T20:08:45.815352+00:00",
+    "updated_at": "2026-11-11T20:08:45.815352+00:00"
+  },
+  {
+    "id": "chat_1794339549131",
+    "user_id": "112675643328808722449",
+    "user_email": "ritikkr274@gmail.com",
+    "title": "Tell me about the Desert",
+    "messages": [
+      {
+        "id": "u-1794339504129-ki1m",
+        "role": "user",
+        "text": "Tell me about the Desert",
+        "timestamp": "01:08 am"
+      },
+      {
+        "id": "a-1794339504129-slya",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": null,
+        "error": "AI streaming error: Error code: 429 - [{'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 15, model: gemini-3.5-flash-lite, description: Generate content requests per minute limit exceeded on Free Tier. See https://aistudio.google.com/docs/rate-limits.\\nPlease retry in 32.189896855s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://aistudio.google.com/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'description': 'Generate content requests per minute limit exceeded on Free Tier. See https://aistudio.google.com/docs/rate-limits.', 'quotaMetric': 'generativelanguage.googleapis.com/generate_content_free_tier_requests', 'quotaId': 'GenerateRequestsPerMinutePerProjectPerModel-FreeTier', 'quotaDimensions': {'location': 'global', 'model': 'gemini-3.5-flash-lite'}, 'quotaValue': '15'}]}, {'@type': 'type.googleapis.com/google.rpc.RetryInfo', 'retryDelay': '32s'}]}}]",
+        "timestamp": "01:08 am"
+      },
+      {
+        "id": "u-1794339546413-fcrk",
+        "role": "user",
+        "text": "Tell about the desert",
+        "timestamp": "01:09 am"
+      },
+      {
+        "id": "a-1794339546413-iw7y",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": false,
+          "answer": "Information regarding this topic was not found in the uploaded documents.",
+          "lead": "Information regarding this topic was not found in the uploaded documents.",
+          "keyPoints": [],
+          "stats": {
+            "responseTime": "2.69s",
+            "sourcesUsed": 0,
+            "retrievalStrength": "High"
+          },
+          "sources": []
+        },
+        "error": null,
+        "timestamp": "01:09 am"
+      },
+      {
+        "id": "u-1794339568396-5g4y",
+        "role": "user",
+        "text": "Explain about A Desert",
+        "timestamp": "01:09 am"
+      },
+      {
+        "id": "a-1794339568396-osdq",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": true,
+          "answer": "Based on the provided documents, information regarding a desert is described through the visual figure and analysis of Figure 4 (Page 2).![Figure 4 (Page 2)](/api/documents/images/a47220e3f7449c32009df88ec3da3368a762bc6646b4fe608811e47ebbf1e3b6/page_2_fig_04.jpeg)\n\n* **Environment Type:** An arid or semi-arid desert environment characterized by sand dunes, sparse vegetation, and a distant rocky horizon.\n* **Foreground Features:** Smooth, undulating light brown or beige sand dunes with ripple patterns or wind-blown contours, alongside scattered clumps of resilient, low-lying green shrubs and bushes.\n* **Midground Features:** A horizontal transition zone or escarpment featuring denser clusters of dark green vegetation running horizontally, interspersed with exposed sandy soil and minor slopes.\n* **Background and Horizon:** Rolling expanses of pale sand dunes stretching toward the horizon with isolated trees and shrubs, punctuated by a dark, rugged, rocky ridge or cliff-line beneath a pale, cloudy sky [a47220e3f744_",
+          "lead": "Based on the provided documents, information regarding a desert is described through the visual figure and analysis of Figure 4 (Page 2).![Figure 4 (Page 2)](/api/documents/images/a47220e3f7449c32009df88ec3da3368a762bc6646b4fe608811e47ebbf1e3b6/page_2_fig_04.jpeg)",
+          "keyPoints": [
+            "**Environment Type:** An arid or semi-arid desert environment characterized by sand dunes, sparse vegetation, and a distant rocky horizon.",
+            "**Foreground Features:** Smooth, undulating light brown or beige sand dunes with ripple patterns or wind-blown contours, alongside scattered clumps of resilient, low-lying green shrubs and bushes.",
+            "**Midground Features:** A horizontal transition zone or escarpment featuring denser clusters of dark green vegetation running horizontally, interspersed with exposed sandy soil and minor slopes.",
+            "**Background and Horizon:** Rolling expanses of pale sand dunes stretching toward the horizon with isolated trees and shrubs, punctuated by a dark, rugged, rocky ridge or cliff-line beneath a pale, cloudy sky [a47220e3f744_"
+          ],
+          "stats": {
+            "responseTime": "3.75s",
+            "sourcesUsed": 1,
+            "retrievalStrength": "High"
+          },
+          "sources": [
+            {
+              "id": 1,
+              "source_name": "Test1.pdf",
+              "page": "Page 2",
+              "page_start": 2,
+              "page_end": 2,
+              "snippet": "... * **Midground:** A distinct horizontal transition zone (or escarpment) featuring denser clusters of dark green vegetation running horizontally across the landscape, interspersed with exposed sandy soil and minor slopes. ..."
+            }
+          ]
+        },
+        "error": null,
+        "timestamp": "01:09 am"
+      },
+      {
+        "id": "u-1794339621363-iezt",
+        "role": "user",
+        "text": "Why food is so fascinating",
+        "timestamp": "01:10 am"
+      },
+      {
+        "id": "a-1794339621363-2dqn",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": false,
+          "answer": "Information regarding this topic was not found in the uploaded documents.",
+          "lead": "Information regarding this topic was not found in the uploaded documents.",
+          "keyPoints": [],
+          "stats": {
+            "responseTime": "2.38s",
+            "sourcesUsed": 0,
+            "retrievalStrength": "High"
+          },
+          "sources": []
+        },
+        "error": null,
+        "timestamp": "01:10 am"
+      },
+      {
+        "id": "u-1794339645381-izct",
+        "role": "user",
+        "text": "food is so fascinating.",
+        "timestamp": "01:10 am"
+      },
+      {
+        "id": "a-1794339645381-pvkz",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": true,
+          "answer": "Based on the provided context excerpts, food illustrations and traditional meals are represented in several figures from the documents. Here are the details of the food-related visuals found in the text:\n\n* **Figure 11:** Depicts a traditional regional meal consisting of golden-yellow cornmeal flatbreads (*Makki di Roti*) garnished with chopped purple onions and served alongside a spiced green mustard greens purée (*Sarson ka Saag*) in reddish-brown bowls.![Figure 11 (Page 3)](/api/documents/images/a47220e3f7449c32009df88ec3da3368a762bc6646b4fe608811e47ebbf1e3b6/page_3_fig_11.jpeg)\n\n* **Figure 13:** Portrays a traditional South Indian meal served on a green, folded banana leaf, featuring two rolled crispy crepes (*dosa*), three steamed rice cakes (*idlis*), a dollop of red chutney, and a white bowl containing sambar or dal.![Figure 13 (Page 3)](/api/documents/images/a47220e3f7449c32009df88ec3da3368a762bc6646b4fe608811e47ebbf1e3b6/page_3_fig_13.jpeg)\n\n* **Figure 14:** Shows a plated meal on a metallic plate (*thali*) containing a large herb-infused flatbread (*thepla* or paratha), pan-fried fritters, sliced root vegetables, and a mixed vegetable or legume preparation.![Figure 14 (Page 3)](/api/documents/images/a47220e3f7449c32009df88ec3da3368a762bc6646b4fe608811e47ebbf1e3b6/page_3_fig_14.jpeg)",
+          "lead": "Based on the provided context excerpts, food illustrations and traditional meals are represented in several figures from the documents. Here are the details of the food-related visuals found in the text:",
+          "keyPoints": [
+            "**Figure 11:** Depicts a traditional regional meal consisting of golden-yellow cornmeal flatbreads (*Makki di Roti*) garnished with chopped purple onions and served alongside a spiced green mustard greens purée (*Sarson ka Saag*) in reddish-brown bowls.",
+            "**Figure 13:** Portrays a traditional South Indian meal served on a green, folded banana leaf, featuring two rolled crispy crepes (*dosa*), three steamed rice cakes (*idlis*), a dollop of red chutney, and a white bowl containing sambar or dal.",
+            "**Figure 14:** Shows a plated meal on a metallic plate (*thali*) containing a large herb-infused flatbread (*thepla* or paratha), pan-fried fritters, sliced root vegetables, and a mixed vegetable or legume preparation."
+          ],
+          "stats": {
+            "responseTime": "3.52s",
+            "sourcesUsed": 3,
+            "retrievalStrength": "High"
+          },
+          "sources": [
+            {
+              "id": 1,
+              "source_name": "Test1.pdf",
+              "page": "Page 3",
+              "page_start": 3,
+              "page_end": 3,
+              "snippet": "... Summary of Key Takeaways This illustration depicts a traditional, plant-based regional meal consisting of flatbread (*roti*) topped with onions and accompanied by a spiced green vegetable purée (*saag*). ..."
+            },
+            {
+              "id": 2,
+              "source_name": "Test1.pdf",
+              "page": "Page 3",
+              "page_start": 3,
+              "page_end": 3,
+              "snippet": "... This illustration portrays a traditional South Indian meal—featuring dosa, idlis, chutney, and sambar—neatly presented on a natural banana leaf. It exemplifies traditional eco-friendly dining customs and typical regional cuisine components."
+            },
+            {
+              "id": 3,
+              "source_name": "Test1.pdf",
+              "page": "Page 3",
+              "page_start": 3,
+              "page_end": 3,
+              "snippet": "... This illustration depicts a culturally specific, plated meal consisting of a large flatbread alongside assorted side dishes and vegetables. It serves as a visual reference for nutritional analysis, dietary studies, or culinary documentation."
+            }
+          ]
+        },
+        "error": null,
+        "timestamp": "01:10 am"
+      },
+      {
+        "id": "u-1794339718655-isoj",
+        "role": "user",
+        "text": "scientific method",
+        "timestamp": "01:11 am"
+      },
+      {
+        "id": "a-1794339718655-ly3g",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": true,
+          "answer": "Based on the provided documents, here are the details regarding the scientific method:\n\n* **Application in Daily Life:** There are several daily-life situations where we knowingly or unknowingly apply the scientific method.\n* **Developing Capabilities:** Learning science develops our capabilities for finding solutions to bigger problems and solving more mysteries of the universe.\n* **Prerequisites for Learning Science:** To learn science well and follow the scientific method, the first and foremost thing is to be curious, observe your surroundings keenly, and start posing questions (asking how and why).\n* **Nature of the Process:** Doing science and utilizing its methods is about following a step-by-step process that helps us find answers to our questions.",
+          "lead": "Based on the provided documents, here are the details regarding the scientific method:",
+          "keyPoints": [
+            "**Application in Daily Life:** There are several daily-life situations where we knowingly or unknowingly apply the scientific method.",
+            "**Developing Capabilities:** Learning science develops our capabilities for finding solutions to bigger problems and solving more mysteries of the universe.",
+            "**Prerequisites for Learning Science:** To learn science well and follow the scientific method, the first and foremost thing is to be curious, observe your surroundings keenly, and start posing questions (asking how and why).",
+            "**Nature of the Process:** Doing science and utilizing its methods is about following a step-by-step process that helps us find answers to our questions."
+          ],
+          "stats": {
+            "responseTime": "3.83s",
+            "sourcesUsed": 1,
+            "retrievalStrength": "High"
+          },
+          "sources": [
+            {
+              "id": 1,
+              "source_name": "Test1.pdf",
+              "page": "Pages 6-7",
+              "page_start": 6,
+              "page_end": 7,
+              "snippet": "... science well, the first and foremost thing is to be curious and observe your surroundings keenly. ..."
+            }
+          ]
+        },
+        "error": null,
+        "timestamp": "01:11 am"
+      }
+    ],
+    "created_at": "2026-11-10T19:42:02.497821+00:00",
+    "updated_at": "2026-11-10T19:42:02.497821+00:00"
+  },
+  {
+    "id": "chat_1794339549129",
+    "user_id": "112675643328808722449",
+    "user_email": "ritikkr274@gmail.com",
+    "title": "Tell me about the Desert",
+    "messages": [
+      {
+        "id": "u-1794339504129-ki1m",
+        "role": "user",
+        "text": "Tell me about the Desert",
+        "timestamp": "01:08 am"
+      },
+      {
+        "id": "a-1794339504129-slya",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": null,
+        "error": "AI streaming error: Error code: 429 - [{'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 15, model: gemini-3.5-flash-lite, description: Generate content requests per minute limit exceeded on Free Tier. See https://aistudio.google.com/docs/rate-limits.\\nPlease retry in 32.189896855s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://aistudio.google.com/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'description': 'Generate content requests per minute limit exceeded on Free Tier. See https://aistudio.google.com/docs/rate-limits.', 'quotaMetric': 'generativelanguage.googleapis.com/generate_content_free_tier_requests', 'quotaId': 'GenerateRequestsPerMinutePerProjectPerModel-FreeTier', 'quotaDimensions': {'location': 'global', 'model': 'gemini-3.5-flash-lite'}, 'quotaValue': '15'}]}, {'@type': 'type.googleapis.com/google.rpc.RetryInfo', 'retryDelay': '32s'}]}}]",
+        "timestamp": "01:08 am"
+      },
+      {
+        "id": "u-1794339546413-fcrk",
+        "role": "user",
+        "text": "Tell about the desert",
+        "timestamp": "01:09 am"
+      },
+      {
+        "id": "a-1794339546413-iw7y",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": false,
+          "answer": "Information regarding this topic was not found in the uploaded documents.",
+          "lead": "Information regarding this topic was not found in the uploaded documents.",
+          "keyPoints": [],
+          "stats": {
+            "responseTime": "2.69s",
+            "sourcesUsed": 0,
+            "retrievalStrength": "High"
+          },
+          "sources": []
+        },
+        "error": null,
+        "timestamp": "01:09 am"
+      }
+    ],
+    "created_at": "2026-11-10T19:39:09.144828+00:00",
+    "updated_at": "2026-11-10T19:39:09.144828+00:00"
+  },
+  {
+    "id": "chat_1794169843731",
+    "user_id": "112675643328808722449",
+    "user_email": "ritikkr274@gmail.com",
+    "title": "whats the name of cahpter",
+    "messages": [
+      {
+        "id": "u-1794169841404-0hya",
+        "role": "user",
+        "text": "whats the name of cahpter",
+        "timestamp": "02:00 am"
+      },
+      {
+        "id": "a-1794169841404-xbmq",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": true,
+          "answer": "Based on the provided documents, the name of the chapter is **The Wonderful World of Science**.",
+          "lead": "Based on the provided documents, the name of the chapter is **The Wonderful World of Science**.",
+          "keyPoints": [],
+          "stats": {
+            "responseTime": "2.31s",
+            "sourcesUsed": 1,
+            "retrievalStrength": "High"
+          },
+          "sources": [
+            {
+              "id": 1,
+              "source_name": "Test1.pdf",
+              "page": "Pages 4-5",
+              "page_start": 4,
+              "page_end": 5,
+              "snippet": "[Document: Test1.pdf | Section: Introduction | Page 4] ..."
+            }
+          ]
+        },
+        "error": null,
+        "timestamp": "02:00 am"
+      },
+      {
+        "id": "u-1794169980159-qbqp",
+        "role": "user",
+        "text": "at what page, the image of A Galaxy is there??",
+        "timestamp": "02:03 am"
+      },
+      {
+        "id": "a-1794169980159-pg80",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": true,
+          "answer": "Based on the provided documents, the image of a galaxy is on page 2.![Figure 7 (Page 2)](/api/documents/images/a47220e3f7449c32009df88ec3da3368a762bc6646b4fe608811e47ebbf1e3b6/page_2_fig_07.jpeg)",
+          "lead": "Based on the provided documents, the image of a galaxy is on page 2.![Figure 7 (Page 2)](/api/documents/images/a47220e3f7449c32009df88ec3da3368a762bc6646b4fe608811e47ebbf1e3b6/page_2_fig_07.jpeg)",
+          "keyPoints": [],
+          "stats": {
+            "responseTime": "3.32s",
+            "sourcesUsed": 1,
+            "retrievalStrength": "High"
+          },
+          "sources": [
+            {
+              "id": 1,
+              "source_name": "Test1.pdf",
+              "page": "Page 2",
+              "page_start": 2,
+              "page_end": 2,
+              "snippet": "[Document: Test1.pdf | Visual Figure: Figure 7 (Page 2) | Page 2] ![Figure 7 (Page 2)](/api/documents/images/a47220e3f7449c32009df88ec3da3368a762bc6646b4fe608811e47ebbf1e3b6/page_2_fig_07.jpeg) ..."
+            }
+          ]
+        },
+        "error": null,
+        "timestamp": "02:03 am"
+      }
+    ],
+    "created_at": "2026-11-08T20:33:03.493630+00:00",
+    "updated_at": "2026-11-08T20:33:03.493630+00:00"
+  },
+  {
+    "id": "chat_1794169843730",
+    "user_id": "112675643328808722449",
+    "user_email": "ritikkr274@gmail.com",
+    "title": "whats the name of cahpter",
+    "messages": [
+      {
+        "id": "u-1794169841404-0hya",
+        "role": "user",
+        "text": "whats the name of cahpter",
+        "timestamp": "02:00 am"
+      },
+      {
+        "id": "a-1794169841404-xbmq",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": true,
+          "answer": "Based on the provided documents, the name of the chapter is **The Wonderful World of Science**.",
+          "lead": "Based on the provided documents, the name of the chapter is **The Wonderful World of Science**.",
+          "keyPoints": [],
+          "stats": {
+            "responseTime": "2.31s",
+            "sourcesUsed": 1,
+            "retrievalStrength": "High"
+          },
+          "sources": [
+            {
+              "id": 1,
+              "source_name": "Test1.pdf",
+              "page": "Pages 4-5",
+              "page_start": 4,
+              "page_end": 5,
+              "snippet": "[Document: Test1.pdf | Section: Introduction | Page 4] ..."
+            }
+          ]
+        },
+        "error": null,
+        "timestamp": "02:00 am"
+      }
+    ],
+    "created_at": "2026-11-08T20:30:43.747791+00:00",
+    "updated_at": "2026-11-08T20:30:43.747791+00:00"
+  },
+  {
+    "id": "chat_1794168772919",
+    "user_id": "112675643328808722449",
+    "user_email": "ritikkr274@gmail.com",
+    "title": "Explain Model Architecture",
+    "messages": [
+      {
+        "id": "u-1794168767292-e3ep",
+        "role": "user",
+        "text": "Explain Model Architecture",
+        "timestamp": "01:42 am"
+      },
+      {
+        "id": "a-1794168767292-wme9",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": true,
+          "answer": "Based on the provided documents, here is an explanation of the Transformer model architecture:![Figure 1: The Transformer - model architecture.](/api/documents/images/9445dbf864e9c6aa2ad906b3d00d87a7a3085fa28a5e9e4372cbecc5674516de/page_3_fig_01.png)\n\n### Overview\nThe Transformer follows an encoder-decoder structure using stacked self-attention and point-wise, fully connected layers for both the encoder and decoder. It entirely discards recurrence and convolutions, relying solely on attention mechanisms.\n\n### Encoder and Decoder Stacks\n* **Encoder:** \n  * Composed of a stack of $N = 6$ identical layers.\n  * Each layer has two sub-layers: a multi-head self-attention mechanism, followed by a simple position-wise fully connected feed-forward network.\n  * A residual connection is employed around each of the two sub-layers, followed by layer normalization (i.e., $\\text{LayerNorm}(x + \\text{Sublayer}(x))$).\n  * All sub-layers and embedding layers produce outputs of dimension $d_{\\text{model}} = 512$.\n* **Decoder:** \n  * Composed of a stack of $N = 6$ identical layers.\n  * In addition to the two sub-layers found in the encoder, the decoder inserts a third sub-layer that performs multi-head attention over the output of the encoder stack.\n  * Residual connections and layer normalization are similarly employed around each sub-layer.\n  * The self-attention sub-layer in the decoder stack is modified with masking (combined with offset output embeddings) to prevent positions from attending to subsequent positions, ensuring predictions for position $i$ depend only on known outputs at positions less than $i$.\n\n### Attention Mechanisms\n* **Scaled Dot-Product Attention:** Consists of queries and keys of dimension $d_k$, and values of dimension $d_v$. The output matrix is computed as:\n  $$\\text{Attention}(Q, K, V) = \\text{softmax}\\left(\\frac{QK^T}{\\sqrt{d_k}}\\right)V$$\n* **Multi-Head Attention:** Linearly projects queries, keys, and values $h$ times in parallel with different learned linear projections to $d_k$, $d_k$, and $d_v$ dimensions, respectively ($h = 8$ parallel attention layers/heads, with $d_k = d_v = d_{\\text{model}}/h = 64$). The outputs are concatenated and projected again:\n  $$\\text{MultiHead}(Q, K, V) = \\text{Concat}(\\text{head}_1,..., \\text{head}_h)W^O$$\n  where $\\text{head}_i = \\text{Attention}(QW_i^Q, KW_i^K, VW_i^V)$.\n* **Applications of Attention:**\n  * *Encoder-decoder attention layers:* Queries come from the previous decoder layer, and memory keys and values come from the encoder output.\n  * *Encoder self-attention layers:* Keys, values, and queries all come from the output of the previous layer in the encoder.\n  * *Decoder self-attention layers:* Allows each position in the decoder to attend to all positions in the decoder up to and including that position, utilizing masking to preserve the auto-regressive property.\n\n### Position-wise Feed-Forward Networks\n* Each layer in the encoder and decoder contains a fully connected feed-forward network applied to each position separately and identically.\n* Consists of two linear transformations with a ReLU activation in between:\n  $$\\text{FFN}(x) = \\max(0, xW_1 + b_1)W_2 + b_2$$\n* The input and output dimensionality is $d_{\\text{model}} = 512$, and the inner-layer dimensionality is $d_{\\text{ff}} = 2048$.\n\n### Embeddings and Softmax\n* Uses learned embeddings to convert input and output tokens to vectors of dimension $d_{\\text{model}}$, multiplying those weights by $\\sqrt{d_{\\text{model}}}$ in the embedding layers.\n* Uses a learned linear transformation and softmax function to convert decoder outputs to predicted next-token probabilities, sharing the same weight matrix between the two embedding layers and the pre-softmax linear transformation.\n\n### Positional Encoding\n* Because the model contains no recurrence or convolution, positional encodings are added to the input embeddings at the bottoms of the encoder and decoder stacks to inject sequence order information.\n* Uses sine and cosine functions of different frequencies:\n  $$PE_{(pos, 2i)} = \\sin(pos / 10000^{2i/d_{\\text{model}}})$$\n  $$PE_{(pos, 2i+1)} = \\cos(pos / 10000^{2i/d_{\\text{model}}})$$",
+          "lead": "Based on the provided documents, here is an explanation of the Transformer model architecture:![Figure 1: The Transformer - model architecture.](/api/documents/images/9445dbf864e9c6aa2ad906b3d00d87a7a3085fa28a5e9e4372cbecc5674516de/page_3_fig_01.png) ### Overview The Transformer follows an encoder-decoder structure using stacked self-attention and point-wise, fully connected layers for both the encoder and decoder. It entirely discards recurrence and convolutions, relying solely on attention mechanisms. ### Encoder and Decoder Stacks",
+          "keyPoints": [
+            "**Encoder:**",
+            "Composed of a stack of $N = 6$ identical layers.",
+            "Each layer has two sub-layers: a multi-head self-attention mechanism, followed by a simple position-wise fully connected feed-forward network.",
+            "A residual connection is employed around each of the two sub-layers, followed by layer normalization (i.e., $\\text{LayerNorm}(x + \\text{Sublayer}(x))$).",
+            "All sub-layers and embedding layers produce outputs of dimension $d_{\\text{model}} = 512$.",
+            "**Decoder:**",
+            "Composed of a stack of $N = 6$ identical layers.",
+            "In addition to the two sub-layers found in the encoder, the decoder inserts a third sub-layer that performs multi-head attention over the output of the encoder stack.",
+            "Residual connections and layer normalization are similarly employed around each sub-layer.",
+            "The self-attention sub-layer in the decoder stack is modified with masking (combined with offset output embeddings) to prevent positions from attending to subsequent positions, ensuring predictions for position $i$ depend only on known outputs at positions less than $i$.",
+            "**Scaled Dot-Product Attention:** Consists of queries and keys of dimension $d_k$, and values of dimension $d_v$. The output matrix is computed as:",
+            "**Multi-Head Attention:** Linearly projects queries, keys, and values $h$ times in parallel with different learned linear projections to $d_k$, $d_k$, and $d_v$ dimensions, respectively ($h = 8$ parallel attention layers/heads, with $d_k = d_v = d_{\\text{model}}/h = 64$). The outputs are concatenated and projected again:",
+            "**Applications of Attention:**",
+            "*Encoder-decoder attention layers:* Queries come from the previous decoder layer, and memory keys and values come from the encoder output.",
+            "*Encoder self-attention layers:* Keys, values, and queries all come from the output of the previous layer in the encoder.",
+            "*Decoder self-attention layers:* Allows each position in the decoder to attend to all positions in the decoder up to and including that position, utilizing masking to preserve the auto-regressive property.",
+            "Each layer in the encoder and decoder contains a fully connected feed-forward network applied to each position separately and identically.",
+            "Consists of two linear transformations with a ReLU activation in between:",
+            "The input and output dimensionality is $d_{\\text{model}} = 512$, and the inner-layer dimensionality is $d_{\\text{ff}} = 2048$.",
+            "Uses learned embeddings to convert input and output tokens to vectors of dimension $d_{\\text{model}}$, multiplying those weights by $\\sqrt{d_{\\text{model}}}$ in the embedding layers.",
+            "Uses a learned linear transformation and softmax function to convert decoder outputs to predicted next-token probabilities, sharing the same weight matrix between the two embedding layers and the pre-softmax linear transformation.",
+            "Because the model contains no recurrence or convolution, positional encodings are added to the input embeddings at the bottoms of the encoder and decoder stacks to inject sequence order information.",
+            "Uses sine and cosine functions of different frequencies:"
+          ],
+          "stats": {
+            "responseTime": "5.60s",
+            "sourcesUsed": 1,
+            "retrievalStrength": "High"
+          },
+          "sources": [
+            {
+              "id": 1,
+              "source_name": "Test.pdf",
+              "page": "Page 8",
+              "page_start": 8,
+              "page_end": 8,
+              "snippet": "... We set the maximum output length during inference to input length + 50, but terminate early when possible [38]. Table 2 summarizes our results and compares our translation quality and training costs to other model architectures from the literature. ..."
+            }
+          ]
+        },
+        "error": null,
+        "timestamp": "01:42 am"
+      },
+      {
+        "id": "u-1794168803977-yyfy",
+        "role": "user",
+        "text": "Explain Figure 2",
+        "timestamp": "01:43 am"
+      },
+      {
+        "id": "a-1794168803977-j74s",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": false,
+          "answer": "Information regarding this topic was not found in the uploaded documents.",
+          "lead": "Information regarding this topic was not found in the uploaded documents.",
+          "keyPoints": [],
+          "stats": {
+            "responseTime": "2.20s",
+            "sourcesUsed": 0,
+            "retrievalStrength": "High"
+          },
+          "sources": []
+        },
+        "error": null,
+        "timestamp": "01:43 am"
+      },
+      {
+        "id": "u-1794168825584-dydj",
+        "role": "user",
+        "text": "Figure 2: (left) Scaled Dot-Product Attention. (right) Multi-Head Attention consists of several\nattention layers running in parallel.",
+        "timestamp": "01:43 am"
+      },
+      {
+        "id": "a-1794168825584-c9r2",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": false,
+          "answer": "Information regarding this topic was not found in the uploaded documents.",
+          "lead": "Information regarding this topic was not found in the uploaded documents.",
+          "keyPoints": [],
+          "stats": {
+            "responseTime": "2.85s",
+            "sourcesUsed": 0,
+            "retrievalStrength": "High"
+          },
+          "sources": []
+        },
+        "error": null,
+        "timestamp": "01:43 am"
+      },
+      {
+        "id": "u-1794168847628-m9xl",
+        "role": "user",
+        "text": "Attention",
+        "timestamp": "01:44 am"
+      },
+      {
+        "id": "a-1794168847628-2trb",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": false,
+          "answer": "Information regarding this topic was not found in the uploaded documents.",
+          "lead": "Information regarding this topic was not found in the uploaded documents.",
+          "keyPoints": [],
+          "stats": {
+            "responseTime": "4.17s",
+            "sourcesUsed": 0,
+            "retrievalStrength": "High"
+          },
+          "sources": []
+        },
+        "error": null,
+        "timestamp": "01:44 am"
+      },
+      {
+        "id": "u-1794168877841-ewqg",
+        "role": "user",
+        "text": "Explain Model Architecture",
+        "timestamp": "01:44 am"
+      },
+      {
+        "id": "a-1794168877841-3z0s",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": true,
+          "answer": "Based on the uploaded documents, the model architecture of the Transformer follows an encoder-decoder structure constructed using stacked self-attention and point-wise, fully connected layers for both the encoder and decoder.![Figure 1: The Transformer - model architecture.](/api/documents/images/9445dbf864e9c6aa2ad906b3d00d87a7a3085fa28a5e9e4372cbecc5674516de/page_3_fig_01.png)\n\n### Encoder and Decoder Stacks\n* **Encoder:** Composed of a stack of $N = 6$ identical layers. Each layer contains two sub-layers: a multi-head self-attention mechanism, followed by a simple, position-wise fully connected feed-forward network. Residual connections around each sub-layer are employed, followed by layer normalization (yielding outputs of dimension $d_{\\text{model}} = 512$).\n* **Decoder:** Composed of a stack of $N = 6$ identical layers. In addition to the two sub-layers found in the encoder, the decoder inserts a third sub-layer that performs multi-head attention over the output of the encoder stack. Residual connections and layer normalization are similarly used around each sub-layer. The self-attention sub-layer in the decoder is modified with masking (combined with offset output embeddings) to prevent positions from attending to subsequent positions, ensuring predictions for position $i$ depend only on known outputs at positions less than $i$.\n\n### Attention Mechanisms\n* **Scaled Dot-Product Attention:** Consists of queries and keys of dimension $d_k$, and values of dimension $d_v$. The matrix of outputs is computed as:\n  $$\\text{Attention}(Q, K, V) = \\text{softmax}\\left(\\frac{QK^T}{\\sqrt{d_k}}\\right)V$$\n* **Multi-Head Attention:** Linearly projects queries, keys, and values $h$ times with different learned projections to $d_k$, $d_k$, and $d_v$ dimensions respectively, running attention in parallel $h = 8$ times to jointly attend to information from different representation subspaces.\n  $$\\text{MultiHead}(Q, K, V) = \\text{Concat}(\\text{head}_1, \\dots, \\text{head}_h)W^O$$\n  $$\\text{where } \\text{head}_i = \\text{Attention}(QW_i^Q, KW_i^K, VW_i^V)$$\n* **Applications of Attention:** Used as self-attention layers in the encoder, masked self-attention layers in the decoder, and encoder-decoder attention layers where queries come from the previous decoder layer and keys/values come from the encoder output.\n\n### Position-wise Feed-Forward Networks\n* Each encoder and decoder layer contains a fully connected feed-forward network applied to each position separately and identically, consisting of two linear transformations with a ReLU activation in between:\n  $$\\text{FFN}(x) = \\max(0, xW_1 + b_1)W_2 + b_2$$\n* The dimensionality of the input and output is $d_{\\text{model}} = 512$, and the inner-layer has dimensionality $d_{ff} = 2048$.\n\n### Embeddings, Softmax, and Positional Encoding\n* **Embeddings and Softmax:** Learned embeddings convert input and output tokens to vectors of dimension $d_{\\text{model}}$, sharing the same weight matrix between the two embedding layers and the pre-softmax linear transformation (multiplied by $\\sqrt{d_{\\text{model}}}$ in embedding layers).\n* **Positional Encoding:** Injected at the bottoms of the encoder and decoder stacks via sine and cosine functions of different frequencies to retain sequence order information:\n  $$PE_{(pos, 2i)} = \\sin\\left(\\frac{pos}{10000^{2i/d_{\\text{model}}}}\\right)$$\n  $$PE_{(pos, 2i+1)} = \\cos\\left(\\frac{pos}{10000^{2i/d_{\\text{model}}}}\\right)$$",
+          "lead": "Based on the uploaded documents, the model architecture of the Transformer follows an encoder-decoder structure constructed using stacked self-attention and point-wise, fully connected layers for both the encoder and decoder.![Figure 1: The Transformer - model architecture.](/api/documents/images/9445dbf864e9c6aa2ad906b3d00d87a7a3085fa28a5e9e4372cbecc5674516de/page_3_fig_01.png) ### Encoder and Decoder Stacks",
+          "keyPoints": [
+            "**Encoder:** Composed of a stack of $N = 6$ identical layers. Each layer contains two sub-layers: a multi-head self-attention mechanism, followed by a simple, position-wise fully connected feed-forward network. Residual connections around each sub-layer are employed, followed by layer normalization (yielding outputs of dimension $d_{\\text{model}} = 512$).",
+            "**Decoder:** Composed of a stack of $N = 6$ identical layers. In addition to the two sub-layers found in the encoder, the decoder inserts a third sub-layer that performs multi-head attention over the output of the encoder stack. Residual connections and layer normalization are similarly used around each sub-layer. The self-attention sub-layer in the decoder is modified with masking (combined with offset output embeddings) to prevent positions from attending to subsequent positions, ensuring predictions for position $i$ depend only on known outputs at positions less than $i$.",
+            "**Scaled Dot-Product Attention:** Consists of queries and keys of dimension $d_k$, and values of dimension $d_v$. The matrix of outputs is computed as:",
+            "**Multi-Head Attention:** Linearly projects queries, keys, and values $h$ times with different learned projections to $d_k$, $d_k$, and $d_v$ dimensions respectively, running attention in parallel $h = 8$ times to jointly attend to information from different representation subspaces.",
+            "**Applications of Attention:** Used as self-attention layers in the encoder, masked self-attention layers in the decoder, and encoder-decoder attention layers where queries come from the previous decoder layer and keys/values come from the encoder output.",
+            "Each encoder and decoder layer contains a fully connected feed-forward network applied to each position separately and identically, consisting of two linear transformations with a ReLU activation in between:",
+            "The dimensionality of the input and output is $d_{\\text{model}} = 512$, and the inner-layer has dimensionality $d_{ff} = 2048$.",
+            "**Embeddings and Softmax:** Learned embeddings convert input and output tokens to vectors of dimension $d_{\\text{model}}$, sharing the same weight matrix between the two embedding layers and the pre-softmax linear transformation (multiplied by $\\sqrt{d_{\\text{model}}}$ in embedding layers).",
+            "**Positional Encoding:** Injected at the bottoms of the encoder and decoder stacks via sine and cosine functions of different frequencies to retain sequence order information:"
+          ],
+          "stats": {
+            "responseTime": "6.11s",
+            "sourcesUsed": 1,
+            "retrievalStrength": "High"
+          },
+          "sources": [
+            {
+              "id": 1,
+              "source_name": "Test.pdf",
+              "page": "Page 8",
+              "page_start": 8,
+              "page_end": 8,
+              "snippet": "... We estimate the number of floating point operations used to train a model by multiplying the training time, the number of GPUs used, and an estimate of the sustained single-precision floating-point capacity of each GPU"
+            }
+          ]
+        },
+        "error": null,
+        "timestamp": "01:44 am"
+      },
+      {
+        "id": "u-1794168915455-zru7",
+        "role": "user",
+        "text": "Explain Scaled Dot Product Attention",
+        "timestamp": "01:45 am"
+      },
+      {
+        "id": "a-1794168915455-ib3n",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": true,
+          "answer": "Based on the provided documents, Scaled Dot-Product Attention is an attention mechanism used within the Transformer model [3.2, 3.2.1].![Figure 2: (left) Scaled Dot-Product Attention. (right) Multi-Head Attention consists of several](/api/documents/images/9445dbf864e9c6aa2ad906b3d00d87a7a3085fa28a5e9e4372cbecc5674516de/page_4_fig_02.png)\n\n### Key Aspects and Mechanism of Scaled Dot-Product Attention\n\n* **Inputs:** The input consists of queries (Q) and keys (K) of dimension d_k, and values (V) of dimension d_v [3.2.1]. In practice, the attention function is computed on a set of queries simultaneously packed together into a matrix Q, with keys and values packed into matrices K and V [3.2.1].\n* **Computation Formula:** The matrix of outputs is computed as [3.2.1]:\n  \n\n```\nAttention(Q, K, V) = softmax(QK^T / sqrt(d_k))V\n```\n\n\n* **Step-by-Step Pipeline:**\n  1. **Matrix Multiplication (MatMul):** The dot products of the query with all keys (QK^T) are computed [3.2.1].\n  2. **Scale:** Each dot product is divided by a scaling factor of (1 / sqrt(d_k)) [3.2.1]. This scaling counteracts the effect where large values of d_k push the softmax function into regions with extremely small gradients [3.2.1].\n  3. **Masking (Optional):** An optional masking operation can be applied (commonly used inside the decoder's self-attention to prevent leftward information flow/illegal connections by setting corresponding input values of the softmax to -infty) [3.2.3].\n  4. **SoftMax:** A softmax function is applied to the scaled (and optionally masked) scores to obtain the probability weights on the values [3.2.1].\n  5. **Final Matrix Multiplication:** The resulting weights are multiplied by the values (V) to produce the output [3.2.1].\n\n### Comparison: Scaled Dot-Product Attention vs. Additive Attention\n\n| Criteria | Scaled Dot-Product Attention | Additive Attention |\n|:--- |:--- |:--- |\n| **Compatibility Function** | Uses matrix multiplication of queries and keys (QK^T) followed by scaling [3.2.1]. | Uses a feed-forward network with a single hidden layer [3.2.1]. |\n| **Computational Efficiency** | Much faster and more space-efficient in practice because it can be implemented using highly optimized matrix multiplication code [3.2.1]. | Similar in theoretical complexity to dot-product attention, but less efficient [3.2.1]. |\n| **Performance with Large d_k** | Requires scaling by (1 / sqrt(d_k)) for larger values of d_k to prevent extremely small gradients in the softmax function [3.2.1]. | Outperforms unscaled dot-product attention for larger values of d_k [3.2.1]. |",
+          "lead": "Based on the provided documents, Scaled Dot-Product Attention is an attention mechanism used within the Transformer model [3.2, 3.2.1].![Figure 2: (left) Scaled Dot-Product Attention. (right) Multi-Head Attention consists of several](/api/documents/images/9445dbf864e9c6aa2ad906b3d00d87a7a3085fa28a5e9e4372cbecc5674516de/page_4_fig_02.png) ### Key Aspects and Mechanism of Scaled Dot-Product Attention",
+          "keyPoints": [
+            "**Inputs:** The input consists of queries (Q) and keys (K) of dimension d_k, and values (V) of dimension d_v [3.2.1]. In practice, the attention function is computed on a set of queries simultaneously packed together into a matrix Q, with keys and values packed into matrices K and V [3.2.1].",
+            "**Computation Formula:** The matrix of outputs is computed as [3.2.1]:",
+            "**Step-by-Step Pipeline:**"
+          ],
+          "stats": {
+            "responseTime": "5.32s",
+            "sourcesUsed": 3,
+            "retrievalStrength": "High"
+          },
+          "sources": [
+            {
+              "id": 1,
+              "source_name": "Test.pdf",
+              "page": "Page 4",
+              "page_start": 4,
+              "page_end": 4,
+              "snippet": "... 1. **MatMul (Matrix Multiplication):** Takes inputs $Q$ and $K$ to compute their dot product ($QK^T$). 2. **Scale:** Divides the matrix product by a scaling factor (typically $\\sqrt{d_k}$) to prevent vanishing gradients in the softmax function for large key dimensions. ..."
+            },
+            {
+              "id": 2,
+              "source_name": "Test.pdf",
+              "page": "Pages 3-4",
+              "page_start": 3,
+              "page_end": 4,
+              "snippet": "... **3.2** **Attention** An attention function can be described as mapping a query and a set of key-value pairs to an output, where the query, keys, values, and output are all vectors. ..."
+            },
+            {
+              "id": 3,
+              "source_name": "Test.pdf",
+              "page": "Page 14",
+              "page_start": 14,
+              "page_end": 14,
+              "snippet": "... **Attention Visualization / Neural Network Interpretability Diagram:** This is a bipartite graph or token-attention visualization chart commonly used in Natural Language Processing (NLP) research (specifically from the seminal \"Attention Is All You Need\" / Transformer paper) to visualize ..."
+            }
+          ]
+        },
+        "error": null,
+        "timestamp": "01:45 am"
+      },
+      {
+        "id": "u-1794168997903-lk21",
+        "role": "user",
+        "text": "Explain Multi-Head Attention",
+        "timestamp": "01:46 am"
+      },
+      {
+        "id": "a-1794168997903-fa5p",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": true,
+          "answer": "Based on the provided documents, Multi-Head Attention is explained through the following details:\n\n* **Core Mechanism:** Instead of performing a single attention function with full-dimensional queries, keys, and values, multi-head attention projects the queries (Q), keys (K), and values (V) h times with different, learned linear projections.\n* **Parallel Processing:** These projected representations feed into a stack of h parallel blocks of Scaled Dot-Product Attention. This allows the model to jointly attend to information from different representation subspaces at different positions simultaneously.\n* **Outputs and Concatenation:** The outputs from all h attention heads are concatenated and then passed through a final linear projection layer to produce a unified output.\n* **Specialized Head Behaviors:** Different attention heads within the model learn to specialize and capture distinct linguistic properties, tasks, and relationships (such as tracking long-distance dependencies or anaphora resolution) rather than sharing a uniform parsing strategy.![Figure 2: (left) Scaled Dot-Product Attention. (right) Multi-Head Attention consists of several](/api/documents/images/9445dbf864e9c6aa2ad906b3d00d87a7a3085fa28a5e9e4372cbecc5674516de/page_4_fig_03.png)",
+          "lead": "Based on the provided documents, Multi-Head Attention is explained through the following details:",
+          "keyPoints": [
+            "**Core Mechanism:** Instead of performing a single attention function with full-dimensional queries, keys, and values, multi-head attention projects the queries (Q), keys (K), and values (V) h times with different, learned linear projections.",
+            "**Parallel Processing:** These projected representations feed into a stack of h parallel blocks of Scaled Dot-Product Attention. This allows the model to jointly attend to information from different representation subspaces at different positions simultaneously.",
+            "**Outputs and Concatenation:** The outputs from all h attention heads are concatenated and then passed through a final linear projection layer to produce a unified output.",
+            "**Specialized Head Behaviors:** Different attention heads within the model learn to specialize and capture distinct linguistic properties, tasks, and relationships (such as tracking long-distance dependencies or anaphora resolution) rather than sharing a uniform parsing strategy."
+          ],
+          "stats": {
+            "responseTime": "3.67s",
+            "sourcesUsed": 4,
+            "retrievalStrength": "High"
+          },
+          "sources": [
+            {
+              "id": 1,
+              "source_name": "Test.pdf",
+              "page": "Page 4",
+              "page_start": 4,
+              "page_end": 4,
+              "snippet": "... Instead of performing a single attention function with full-dimensional queries, keys, and values, multi-head attention projects the queries, keys, and values $h$ times with different, learned linear projections. ..."
+            },
+            {
+              "id": 2,
+              "source_name": "Test.pdf",
+              "page": "Page 13",
+              "page_start": 13,
+              "page_end": 13,
+              "snippet": "... Different colors correspond to different \"attention heads\" within layer 5 of the model. * **Caption Transcription:** *\"Figure 3: An example of the attention mechanism following long-distance dependencies in the encoder self-attention in layer 5 of 6. ..."
+            },
+            {
+              "id": 3,
+              "source_name": "Test.pdf",
+              "page": "Page 15",
+              "page_start": 15,
+              "page_end": 15,
+              "snippet": "... * Individual attention heads within the same layer of a Transformer model learn specialized, distinct linguistic behaviors and tasks. * Visualizing attention weights reveals that different heads capture separate structural properties of a sentence rather than sharing a uniform parsing strategy."
+            },
+            {
+              "id": 4,
+              "source_name": "Test.pdf",
+              "page": "Page 14",
+              "page_start": 14,
+              "page_end": 14,
+              "snippet": "... Core Concept and Mechanism This figure demonstrates **self-attention interpretability** within a Transformer model, specifically highlighting how individual attention heads specialize in linguistic tasks like **anaphora resolution** (resolving what pronoun a word refers to). ..."
+            }
+          ]
+        },
+        "error": null,
+        "timestamp": "01:46 am"
+      }
+    ],
+    "created_at": "2026-11-08T20:16:41.601095+00:00",
+    "updated_at": "2026-11-08T20:16:41.601095+00:00"
+  },
+  {
+    "id": "chat_1794166439406",
+    "user_id": "112675643328808722449",
+    "user_email": "ritikkr274@gmail.com",
+    "title": "Explain the Figure 1",
+    "messages": [
+      {
+        "id": "u-1794166436825-hfq5",
+        "role": "user",
+        "text": "Explain the Figure 1",
+        "timestamp": "01:03 am"
+      },
+      {
+        "id": "a-1794166436825-vh07",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": false,
+          "answer": "Information regarding this topic was not found in the uploaded documents.",
+          "lead": "Information regarding this topic was not found in the uploaded documents.",
+          "keyPoints": [],
+          "stats": {
+            "responseTime": "2.54s",
+            "sourcesUsed": 0,
+            "retrievalStrength": "High"
+          },
+          "sources": []
+        },
+        "error": null,
+        "timestamp": "01:03 am"
+      },
+      {
+        "id": "u-1794166473149-z10m",
+        "role": "user",
+        "text": "Explain the Figure 1  The Transformer- model architecture",
+        "timestamp": "01:04 am"
+      },
+      {
+        "id": "a-1794166473149-e8dw",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": false,
+          "answer": "Information regarding this topic was not found in the uploaded documents.",
+          "lead": "Information regarding this topic was not found in the uploaded documents.",
+          "keyPoints": [],
+          "stats": {
+            "responseTime": "2.30s",
+            "sourcesUsed": 0,
+            "retrievalStrength": "High"
+          },
+          "sources": []
+        },
+        "error": null,
+        "timestamp": "01:04 am"
+      },
+      {
+        "id": "u-1794166513967-s8zt",
+        "role": "user",
+        "text": "Explain the Model Architecture",
+        "timestamp": "01:05 am"
+      },
+      {
+        "id": "a-1794166513967-4vb7",
+        "role": "assistant",
+        "isGenerating": false,
+        "data": {
+          "answerable": true,
+          "answer": "Based on the provided documents, here is an explanation of the Transformer model architecture:\n\n### Overview\nThe Transformer follows an encoder-decoder structure commonly used in competitive neural sequence transduction models. However, unlike traditional models that rely on complex recurrent or convolutional neural networks, the Transformer is based solely on attention mechanisms, dispensing with recurrence and convolutions entirely.![Figure 1: The Transformer - model architecture.](/api/documents/images/9445dbf864e9c6aa2ad906b3d00d87a7a3085fa28a5e9e4372cbecc5674516de/page_3_fig_01.png)\n\n---\n\n### Key Architectural Components\n\n* **Encoder Stack:**\n  * The encoder maps an input sequence of symbol representations $(x_1, \\dots, x_n)$ to a sequence of continuous representations $\\mathbf{z} = (z_1, \\dots, z_n)$.\n  * It is composed of a stack of $N = 6$ identical layers.\n  * Each layer has two sub-layers: a multi-head self-attention mechanism, and a simple position-wise fully connected feed-forward network.\n  * A residual connection is employed around each sub-layer, followed by layer normalization (i.e., $\\text{LayerNorm}(x + \\text{Sublayer}(x))$). All sub-layers and embedding layers produce outputs of dimension $d_{\\text{model}} = 512$.\n\n* **Decoder Stack:**\n  * Given the encoder output $\\mathbf{z}$, the decoder generates an output sequence $(y_1, \\dots, y_m)$ of symbols one element at a time auto-regressively.\n  * It is also composed of a stack of $N = 6$ identical layers.\n  * In addition to the two sub-layers found in the encoder, the decoder inserts a third sub-layer that performs multi-head attention over the output of the encoder stack.\n  * Residual connections and layer normalization are applied around each sub-layer.\n  * The decoder's self-attention sub-layer is modified with masking to prevent positions from attending to subsequent positions, which preserves the auto-regressive property combined with offset output embeddings.\n\n---\n\n### Core Mechanisms\n\n* **Attention Functions:** \n  An attention function maps a query and a set of key-value pairs to an output, computed as a weighted sum of the values where weights are determined by a compatibility function of the query with the corresponding key.\n  * **Scaled Dot-Product Attention:** Consists of queries and keys of dimension $d_k$, and values of dimension $d_v$. Computed via the matrix formula:\n    $$\\text{Attention}(Q, K, V) = \\text{softmax}\\left(\\frac{QK^T}{\\sqrt{d_k}}\\right)V$$\n  * **Multi-Head Attention:** Instead of a single attention function, queries, keys, and values are linearly projected $h$ times (with $h=8$) in parallel to $d_k$, $d_k$, and $d_v$ dimensions respectively. The results are concatenated and projected again:\n    $$\\text{MultiHead}(Q, K, V) = \\text{Concat}(\\text{head}_1,",
+          "lead": "Based on the provided documents, here is an explanation of the Transformer model architecture: ### Overview The Transformer follows an encoder-decoder structure commonly used in competitive neural sequence transduction models. However, unlike traditional models that rely on complex recurrent or convolutional neural networks, the Transformer is based solely on attention mechanisms, dispensing with recurrence and convolutions entirely.![Figure 1: The Transformer - model architecture.](/api/documents/images/9445dbf864e9c6aa2ad906b3d00d87a7a3085fa28a5e9e4372cbecc5674516de/page_3_fig_01.png) --- ### Key Architectural Components",
+          "keyPoints": [
+            "**Encoder Stack:**",
+            "The encoder maps an input sequence of symbol representations $(x_1, \\dots, x_n)$ to a sequence of continuous representations $\\mathbf{z} = (z_1, \\dots, z_n)$.",
+            "It is composed of a stack of $N = 6$ identical layers.",
+            "Each layer has two sub-layers: a multi-head self-attention mechanism, and a simple position-wise fully connected feed-forward network.",
+            "A residual connection is employed around each sub-layer, followed by layer normalization (i.e., $\\text{LayerNorm}(x + \\text{Sublayer}(x))$). All sub-layers and embedding layers produce outputs of dimension $d_{\\text{model}} = 512$.",
+            "**Decoder Stack:**",
+            "Given the encoder output $\\mathbf{z}$, the decoder generates an output sequence $(y_1, \\dots, y_m)$ of symbols one element at a time auto-regressively.",
+            "It is also composed of a stack of $N = 6$ identical layers.",
+            "In addition to the two sub-layers found in the encoder, the decoder inserts a third sub-layer that performs multi-head attention over the output of the encoder stack.",
+            "Residual connections and layer normalization are applied around each sub-layer.",
+            "The decoder's self-attention sub-layer is modified with masking to prevent positions from attending to subsequent positions, which preserves the auto-regressive property combined with offset output embeddings.",
+            "**Attention Functions:**",
+            "**Scaled Dot-Product Attention:** Consists of queries and keys of dimension $d_k$, and values of dimension $d_v$. Computed via the matrix formula:",
+            "**Multi-Head Attention:** Instead of a single attention function, queries, keys, and values are linearly projected $h$ times (with $h=8$) in parallel to $d_k$, $d_k$, and $d_v$ dimensions respectively. The results are concatenated and projected again:"
+          ],
+          "stats": {
+            "responseTime": "4.56s",
+            "sourcesUsed": 1,
+            "retrievalStrength": "High"
+          },
+          "sources": [
+            {
+              "id": 1,
+              "source_name": "Test.pdf",
+              "page": "Page 8",
+              "page_start": 8,
+              "page_end": 8,
+              "snippet": "... We set the maximum output length during inference to input length + 50, but terminate early when possible [38]. Table 2 summarizes our results and compares our translation quality and training costs to other model architectures from the literature. ..."
+            }
+          ]
+        },
+        "error": null,
+        "timestamp": "01:05 am"
+      }
+    ],
+    "created_at": "2026-11-08T19:35:18.534407+00:00",
+    "updated_at": "2026-11-08T19:35:18.534407+00:00"
+  },
+  {
     "id": "chat_1793906684492",
     "user_id": "112675643328808722449",
     "user_email": "ritikkr274@gmail.com",

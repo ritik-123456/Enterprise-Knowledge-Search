@@ -1,4 +1,5 @@
 import React from 'react'
+import katex from 'katex'
 
 /**
  * Strips internal chunk ID citations such as [3ab80ad6529b_p1_c004]
@@ -8,16 +9,15 @@ export function stripChunkIdCitations(text) {
   if (!text || typeof text !== 'string') return text || ''
 
   return text
-    // 1. Bracket containing chunk IDs (single or comma-separated)
-    // e.g. [3ab80ad6529b_p1_c004] or [3ab80ad6529b_p1_c004, 9232c7e34eea_p2_c001]
-    .replace(/\s*\[\s*(?:chunk\s*id\s*:\s*)?[a-zA-Z0-9_\-]+_p\d+_c\d+(?:\s*,\s*(?:chunk\s*id\s*:\s*)?[a-zA-Z0-9_\-]+_p\d+_c\d+)*\s*\]/gi, '')
-    // 2. Any bracket with _p and _c chunk ID pattern
-    .replace(/\s*\[\s*[^\]]*_p\d+_c\d+[^\]]*\s*\]/gi, '')
-    // 3. Any bracket like [chunk_1] or [comp_101] or [chunk_id]
-    .replace(/\s*\[\s*(?:chunk|comp|doc)_[a-zA-Z0-9_\-]+\s*\]/gi, '')
-    .replace(/\s*\[\s*chunk_id\s*\]/gi, '')
+    // 1. Bracket containing chunk IDs (single or comma-separated, supporting _p_c and _img_) - preserve ![image](...)
+    .replace(/(?<!\!)\s*\[\s*(?:chunk\s*id\s*:\s*)?[a-zA-Z0-9_\-]+_(?:p\d+_c\d+|img_p\d+_\d+|p\d+_img\d+)(?:\s*,\s*(?:chunk\s*id\s*:\s*)?[a-zA-Z0-9_\-]+_(?:p\d+_c\d+|img_p\d+_\d+|p\d+_img\d+))*\s*\]/gi, '')
+    // 2. Any bracket with _p and _c or _img pattern - preserve ![image](...)
+    .replace(/(?<!\!)\s*\[\s*[^\]]*?(?:_p\d+|_img_p\d+)[^\]]*?\s*\]/gi, '')
+    // 3. Any bracket like [chunk_1] or [comp_101] or [chunk_id] - preserve ![image](...)
+    .replace(/(?<!\!)\s*\[\s*(?:chunk|comp|doc|img)_[a-zA-Z0-9_\-]+\s*\]/gi, '')
+    .replace(/(?<!\!)\s*\[\s*chunk_id\s*\]/gi, '')
     // 4. Remove bare unbracketed chunk IDs at end of string/sentence
-    .replace(/\s*\b[a-f0-9]{8,}_p\d+_c\d+\b/gi, '')
+    .replace(/\s*\b[a-f0-9]{8,}_(?:p\d+_c\d+|img_p\d+_\d+)\b/gi, '')
     // 5. Strip certainty/confidence prefixes or meta-tags
     .replace(/(?:\(?\bhigh\s+confidence\b:?\)?\s*)/gi, '')
     // 6. Clean up awkward spacing before punctuation caused by removing inline tags
@@ -36,10 +36,49 @@ export function renderInlineContent(text, onCitationClick) {
   if (!text) return null
 
   const cleanedText = stripChunkIdCitations(text)
-  const tokens = cleanedText.split(/(`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*|\[\d+(?:,\s*\d+)*\])/g)
+  const tokens = cleanedText.split(/(!\[.*?\]\([^)]+\)|\$\$.*?\$\$|\$[^\$\n]+\$|`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*|\[\d+(?:,\s*\d+)*\])/g)
 
   return tokens.map((token, i) => {
     if (!token) return null
+
+    // Markdown Image: ![alt](url)
+    const imgMatch = token.match(/^!\[(.*?)\]\(([^)]+)\)/)
+    if (imgMatch) {
+      const alt = imgMatch[1]
+      let src = imgMatch[2]
+      if (src.startsWith('/') && !src.startsWith('//')) {
+        const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+        src = `${apiBase.replace(/\/+$/, '')}${src}`
+      }
+      return (
+        <span key={i} className="claude-markdown-inline-image-wrapper">
+          <img src={src} alt={alt} className="claude-markdown-inline-image" loading="lazy" />
+          {alt && <span className="claude-markdown-image-caption">{alt}</span>}
+        </span>
+      )
+    }
+
+    // Display Math: $$...$$
+    if (token.startsWith('$$') && token.endsWith('$$') && token.length > 4) {
+      const math = token.slice(2, -2).trim()
+      try {
+        const html = katex.renderToString(math, { displayMode: true, throwOnError: false })
+        return <div key={i} className="claude-math-display" dangerouslySetInnerHTML={{ __html: html }} />
+      } catch {
+        return <code key={i} className="claude-math-raw">{token}</code>
+      }
+    }
+
+    // Inline Math: $...$
+    if (token.startsWith('$') && token.endsWith('$') && token.length > 2 && !token.startsWith('$$')) {
+      const math = token.slice(1, -1).trim()
+      try {
+        const html = katex.renderToString(math, { displayMode: false, throwOnError: false })
+        return <span key={i} className="claude-math-inline" dangerouslySetInnerHTML={{ __html: html }} />
+      } catch {
+        return <code key={i} className="claude-math-raw">{token}</code>
+      }
+    }
 
     // Citation badge [1] or [1, 2]
     const citMatch = token.match(/^\[(\d+(?:,\s*\d+)*)\]$/)
@@ -99,8 +138,11 @@ export default function ClaudeMarkdown({ content, onCitationClick, isStreaming =
   // Strip raw chunk ID citations before parsing
   const cleanedContent = stripChunkIdCitations(content)
 
+  // Auto-break glued markdown images onto their own line so they always render as clean figure cards
+  const normalizedImages = cleanedContent.replace(/([^\n])\s*(!\[.*?\]\([^)]+\))/g, '$1\n\n$2\n\n')
+
   // Normalize newlines
-  const text = cleanedContent.replace(/\r\n/g, '\n')
+  const text = normalizedImages.replace(/\r\n/g, '\n')
   const rawLines = text.split('\n')
 
   const blocks = []
@@ -134,7 +176,37 @@ export default function ClaudeMarkdown({ content, onCitationClick, isStreaming =
       continue
     }
 
-    // 3. Markdown Table: Line contains | and next line has | --- |
+    // 3. Display Math Block: $$...$$
+    if (trimmed.startsWith('$$')) {
+      if (trimmed.endsWith('$$') && trimmed.length > 2) {
+        blocks.push({
+          type: 'math',
+          expr: trimmed.slice(2, -2).trim()
+        })
+        i++
+        continue
+      }
+      const mathLines = []
+      const firstLine = trimmed.slice(2).trim()
+      if (firstLine) mathLines.push(firstLine)
+      i++
+      while (i < rawLines.length && !rawLines[i].trim().endsWith('$$')) {
+        mathLines.push(rawLines[i])
+        i++
+      }
+      if (i < rawLines.length) {
+        const lastLine = rawLines[i].trim().replace(/\$\$$/, '').trim()
+        if (lastLine) mathLines.push(lastLine)
+        i++
+      }
+      blocks.push({
+        type: 'math',
+        expr: mathLines.join('\n')
+      })
+      continue
+    }
+
+    // 4. Markdown Table: Line contains | and next line has | --- |
     if (
       trimmed.startsWith('|') &&
       trimmed.endsWith('|') &&
@@ -232,7 +304,19 @@ export default function ClaudeMarkdown({ content, onCitationClick, isStreaming =
       continue
     }
 
-    // 8. Normal Paragraph: Collect consecutive non-empty lines that aren't special
+    // 8. Standalone Figure / Image: ![alt](url)
+    const imgBlockMatch = trimmed.match(/^!\[(.*?)\]\(([^)]+)\)/)
+    if (imgBlockMatch) {
+      blocks.push({
+        type: 'image',
+        alt: imgBlockMatch[1],
+        url: imgBlockMatch[2]
+      })
+      i++
+      continue
+    }
+
+    // 9. Normal Paragraph: Collect consecutive non-empty lines that aren't special
     const paraLines = []
     while (
       i < rawLines.length &&
@@ -242,6 +326,8 @@ export default function ClaudeMarkdown({ content, onCitationClick, isStreaming =
       !rawLines[i].trim().startsWith('>') &&
       !rawLines[i].trim().match(/^[-*•]\s+/) &&
       !rawLines[i].trim().match(/^\d+\.\s+/) &&
+      !rawLines[i].trim().match(/^!\[.*?\]\(/) &&
+      !rawLines[i].trim().startsWith('$$') &&
       !(
         rawLines[i].trim().startsWith('|') &&
         i + 1 < rawLines.length &&
@@ -366,6 +452,42 @@ export default function ClaudeMarkdown({ content, onCitationClick, isStreaming =
                 {isLast && <span className="streaming-cursor">▍</span>}
               </blockquote>
             )
+          case 'math': {
+            let html = ''
+            try {
+              html = katex.renderToString(block.expr, { displayMode: true, throwOnError: false })
+            } catch {
+              html = `<div class="claude-math-raw">${block.expr}</div>`
+            }
+            return (
+              <React.Fragment key={idx}>
+                <div
+                  className="claude-math-display-block"
+                  dangerouslySetInnerHTML={{ __html: html }}
+                />
+                {isLast && <span className="streaming-cursor">▍</span>}
+              </React.Fragment>
+            )
+          }
+          case 'image': {
+            let src = block.url
+            if (src.startsWith('/') && !src.startsWith('//')) {
+              const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+              src = `${apiBase.replace(/\/+$/, '')}${src}`
+            }
+            return (
+              <figure key={idx} className="claude-markdown-figure">
+                <img
+                  src={src}
+                  alt={block.alt || 'Document Figure'}
+                  className="claude-markdown-img"
+                  loading="lazy"
+                />
+                {block.alt && <figcaption className="claude-markdown-caption">{block.alt}</figcaption>}
+                {isLast && <span className="streaming-cursor">▍</span>}
+              </figure>
+            )
+          }
           default:
             return null
         }

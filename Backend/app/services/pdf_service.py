@@ -24,6 +24,8 @@ KNOWN_REAL_HYPHENS = {
     "zero-trust", "open-source", "client-side", "server-side"
 }
 
+_PDF_OXIDE_FAILED = False
+
 
 class PDFProcessingError(Exception):
     """Base exception for all PDF processing errors."""
@@ -350,8 +352,9 @@ class PDFService:
                 # Layout-aware extraction via pdf_oxide or pymupdf4llm when enabled
                 layout_chunks = None
                 if getattr(settings, "ENABLE_LAYOUT_PARSER", True):
+                    global _PDF_OXIDE_FAILED
                     parser_engine = getattr(settings, "PDF_PARSER_ENGINE", "pdf_oxide").lower()
-                    if parser_engine == "pdf_oxide":
+                    if parser_engine == "pdf_oxide" and not _PDF_OXIDE_FAILED:
                         try:
                             import pdf_oxide
                             pdoc = pdf_oxide.PdfDocument.from_bytes(pdf_bytes)
@@ -372,6 +375,7 @@ class PDFService:
                                 logger.info(f"Extracted {len(layout_chunks)} pages using fast Rust pdf_oxide engine for '{file_name}'.")
                         except Exception as oxide_err:
                             logger.warning(f"pdf_oxide layout extraction failed for '{file_name}': {oxide_err}. Falling back to pymupdf4llm.")
+                            _PDF_OXIDE_FAILED = True
                             layout_chunks = None
 
                     # Fallback to pymupdf4llm if pdf_oxide wasn't used or failed
@@ -390,6 +394,19 @@ class PDFService:
                         page_idx = page_num - 1
                         raw_text = item.get("text", "") or ""
                         tables_found = len(item.get("tables", []))
+
+                        # If page contains tables that were flattened without markdown pipes, append structured table
+                        try:
+                            page = doc[page_idx]
+                            tabs = page.find_tables()
+                            if tabs and hasattr(tabs, "tables") and tabs.tables:
+                                tables_found = max(tables_found, len(tabs.tables))
+                                if "|" not in raw_text:
+                                    table_md, _ = self.extract_tables_as_markdown(page)
+                                    if table_md and "|" in table_md:
+                                        raw_text = raw_text.strip() + "\n\n" + table_md
+                        except Exception as t_err:
+                            logger.debug(f"find_tables check on page {page_num}: {t_err}")
 
                         cleaned = self.clean_text(raw_text)
                         cleaned = self.fix_hyphenation(cleaned)
